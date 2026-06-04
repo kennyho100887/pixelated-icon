@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dot Grid Icon Builder</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    background: #0f0f0f;
+    color: #e0e0e0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #222;
+    background: #111;
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: #fff;
+  }
+
+  .icon-name-input {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 5px 10px;
+    color: #fff;
+    font-size: 13px;
+    width: 160px;
+  }
+
+  .icon-name-input:focus { outline: none; border-color: #555; }
+
+  .btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: none;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-primary { background: #fff; color: #000; }
+  .btn-primary:hover { background: #ddd; }
+  .btn-secondary { background: #222; color: #ccc; border: 1px solid #333; }
+  .btn-secondary:hover { background: #2a2a2a; color: #fff; }
+  .btn-danger { background: #3a1a1a; color: #ff6b6b; border: 1px solid #5a2a2a; }
+  .btn-danger:hover { background: #4a2a2a; }
+
+  .spacer { flex: 1; }
+
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* LEFT PANEL */
+  .left-panel {
+    width: 220px;
+    border-right: 1px solid #222;
+    background: #111;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .panel-title {
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #666;
+    border-bottom: 1px solid #1e1e1e;
+  }
+
+  .icon-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  .icon-list::-webkit-scrollbar { width: 4px; }
+  .icon-list::-webkit-scrollbar-track { background: transparent; }
+  .icon-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+  .icon-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.1s;
+    border: 1px solid transparent;
+  }
+
+  .icon-item:hover { background: #1a1a1a; }
+  .icon-item.active { background: #1a1a1a; border-color: #333; }
+
+  .icon-item .preview {
+    width: 32px;
+    height: 32px;
+    background: #161616;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .icon-item .preview svg { width: 24px; height: 24px; }
+
+  .icon-item .name {
+    font-size: 12px;
+    color: #ccc;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .icon-item .del-btn {
+    opacity: 0;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: all 0.1s;
+    line-height: 1;
+    background: none;
+    border: none;
+  }
+
+  .icon-item:hover .del-btn { opacity: 1; }
+  .icon-item .del-btn:hover { color: #ff6b6b; background: #2a1515; }
+
+  /* CENTER - CANVAS */
+  .center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    background: #0f0f0f;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .canvas-wrapper {
+    position: relative;
+    background: #141414;
+    border-radius: 16px;
+    padding: 32px;
+    border: 1px solid #222;
+  }
+
+  #dot-canvas {
+    display: block;
+    cursor: crosshair;
+    user-select: none;
+  }
+
+  .canvas-info {
+    font-size: 11px;
+    color: #444;
+    text-align: center;
+  }
+
+  /* BRUSH SIZE TOOLBAR */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #161616;
+    border: 1px solid #222;
+    border-radius: 10px;
+    padding: 8px 12px;
+  }
+
+  .toolbar-label {
+    font-size: 11px;
+    color: #555;
+    font-weight: 500;
+  }
+
+  .size-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid transparent;
+    transition: all 0.1s;
+  }
+
+  .size-btn:hover { background: #222; border-color: #333; }
+  .size-btn.active { background: #fff; border-color: #fff; }
+  .size-btn.active .dot-preview { background: #000; }
+
+  .dot-preview {
+    border-radius: 50%;
+    background: #fff;
+    pointer-events: none;
+  }
+
+  .separator { width: 1px; height: 20px; background: #282828; margin: 0 4px; }
+
+  .mode-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    font-size: 11px;
+    font-weight: 500;
+    transition: all 0.1s;
+  }
+
+  .mode-btn.erase { color: #ff6b6b; background: transparent; border-color: transparent; }
+  .mode-btn.erase:hover { background: #2a1515; border-color: #5a2a2a; }
+  .mode-btn.erase.active { background: #3a1a1a; border-color: #ff6b6b; }
+
+  .mode-btn.draw { color: #6bff9e; background: transparent; border-color: transparent; }
+  .mode-btn.draw:hover { background: #152a1e; border-color: #2a5a3a; }
+  .mode-btn.draw.active { background: #1a3a25; border-color: #6bff9e; }
+
+  /* RIGHT PANEL */
+  .right-panel {
+    width: 240px;
+    border-left: 1px solid #222;
+    background: #111;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .settings-section {
+    padding: 16px;
+    border-bottom: 1px solid #1e1e1e;
+  }
+
+  .settings-section h3 {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 12px;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .setting-label { font-size: 12px; color: #888; }
+
+  .setting-value { font-size: 12px; color: #ccc; font-weight: 500; }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 3px;
+    background: #333;
+    border-radius: 2px;
+    outline: none;
+    margin-top: 6px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+  }
+
+  .export-section {
+    padding: 16px;
+  }
+
+  .export-section h3 {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 12px;
+  }
+
+  .svg-output {
+    background: #0a0a0a;
+    border: 1px solid #222;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 10px;
+    color: #666;
+    font-family: 'SF Mono', monospace;
+    height: 120px;
+    overflow-y: auto;
+    word-break: break-all;
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  .svg-output::-webkit-scrollbar { width: 3px; }
+  .svg-output::-webkit-scrollbar-thumb { background: #333; }
+
+  .copy-feedback {
+    font-size: 11px;
+    color: #6bff9e;
+    text-align: center;
+    height: 16px;
+    transition: opacity 0.3s;
+  }
+
+  /* Preview sizes */
+  .preview-grid {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    margin-bottom: 16px;
+  }
+
+  .preview-size {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .preview-size svg { display: block; }
+  .preview-size span {
+    font-size: 10px;
+    color: #444;
+  }
+
+  .grid-settings {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .grid-setting {
+    background: #161616;
+    border: 1px solid #222;
+    border-radius: 6px;
+    padding: 6px 4px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.1s;
+    font-size: 9px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .grid-setting:hover { border-color: #444; color: #ccc; }
+  .grid-setting.active { border-color: #555; background: #1e1e1e; color: #fff; }
+  .grid-setting .val { font-size: 12px; font-weight: 600; color: #fff; display: block; margin-bottom: 1px; letter-spacing: 0; text-transform: none; }
+  .grid-setting.active .val { color: #fff; }
+
+  /* Toggle switch */
+  .toggle { position: relative; display: inline-block; width: 32px; height: 18px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #333; border-radius: 18px; transition: 0.2s;
+  }
+  .toggle-slider:before {
+    position: absolute; content: ""; height: 12px; width: 12px;
+    left: 3px; top: 3px; background-color: #888; border-radius: 50%; transition: 0.2s;
+  }
+  .toggle input:checked + .toggle-slider { background-color: #fff; }
+  .toggle input:checked + .toggle-slider:before { transform: translateX(14px); background-color: #000; }
+
+  /* Dropzone */
+  .dropzone {
+    position: relative;
+    background: #0f0f0f;
+    border: 1.5px dashed #2a2a2a;
+    border-radius: 10px;
+    padding: 18px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    overflow: hidden;
+  }
+  .dropzone:hover { border-color: #444; background: #121212; }
+  .dropzone.dragover { border-color: #fff; background: #1a1a1a; border-style: solid; }
+  .dz-icon { color: #555; display: flex; justify-content: center; margin-bottom: 8px; transition: color 0.15s; }
+  .dropzone:hover .dz-icon, .dropzone.dragover .dz-icon { color: #fff; }
+  .dz-title { font-size: 11px; color: #aaa; font-weight: 500; margin-bottom: 2px; }
+  .dz-sub { font-size: 10px; color: #555; }
+  .dz-preview {
+    display: none;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #1e1e1e;
+  }
+  .dz-preview.has-image { display: block; }
+  .dz-preview img {
+    max-width: 60px;
+    max-height: 60px;
+    background: #fff;
+    padding: 4px;
+    border-radius: 4px;
+  }
+  .dz-preview .filename {
+    font-size: 10px;
+    color: #777;
+    margin-top: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Dot Grid Icons</h1>
+  <input type="text" class="icon-name-input" id="iconName" placeholder="icon-name" value="new-icon">
+  <button class="btn btn-secondary" onclick="clearCanvas()">Clear</button>
+  <button class="btn btn-secondary" onclick="document.getElementById('uploadInput').click()">Trace Image</button>
+  <input type="file" id="uploadInput" accept="image/*" style="display:none" onchange="handleUpload(event)">
+  <button class="btn btn-primary" onclick="saveIcon()">Save Icon</button>
+  <div class="spacer"></div>
+  <button class="btn btn-danger" onclick="resetLibrary()">Reset All</button>
+  <button class="btn btn-secondary" onclick="exportLibrary()">Export Library</button>
+</header>
+
+<div class="main">
+
+  <!-- LEFT: Icon Library -->
+  <div class="left-panel">
+    <div class="panel-title">Library</div>
+    <div class="icon-list" id="iconList">
+      <div style="padding:24px 16px;text-align:center;color:#333;font-size:12px;">
+        No icons yet.<br>Draw and save to start.
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: Canvas -->
+  <div class="center">
+
+    <div class="toolbar">
+      <span class="toolbar-label">Size</span>
+      <button class="size-btn active" onclick="setSize(1)" id="sz1" title="Small">
+        <div class="dot-preview" style="width:6px;height:6px"></div>
+      </button>
+      <button class="size-btn" onclick="setSize(2)" id="sz2" title="Medium">
+        <div class="dot-preview" style="width:10px;height:10px"></div>
+      </button>
+      <button class="size-btn" onclick="setSize(3)" id="sz3" title="Large">
+        <div class="dot-preview" style="width:14px;height:14px"></div>
+      </button>
+      <div class="separator"></div>
+      <button class="mode-btn draw active" onclick="setMode('draw')" id="modeDraw">Draw</button>
+      <button class="mode-btn erase" onclick="setMode('erase')" id="modeErase">Erase</button>
+    </div>
+
+    <div class="canvas-wrapper">
+      <canvas id="dot-canvas"></canvas>
+    </div>
+
+    <div class="canvas-info" id="canvasInfo">
+      Left click to draw · Right click to erase · Drag to paint
+    </div>
+
+  </div>
+
+  <!-- RIGHT: Settings + Export -->
+  <div class="right-panel">
+
+    <div class="settings-section">
+      <h3>Grid</h3>
+      <div class="setting-row">
+        <span class="setting-label">Size</span>
+      </div>
+      <div class="grid-settings" id="gridSettings"></div>
+
+      <div class="setting-row">
+        <span class="setting-label">Cell size</span>
+        <span class="setting-value" id="cellSizeVal">28px</span>
+      </div>
+      <input type="range" id="cellSize" min="3" max="48" value="28" oninput="updateCellSize(this.value)">
+
+      <div class="setting-row" style="margin-top:14px">
+        <span class="setting-label">Safe padding</span>
+        <span class="setting-value" id="padVal">2 dots</span>
+      </div>
+      <input type="range" id="padding" min="0" max="8" value="2" oninput="updatePadding(this.value)">
+    </div>
+
+    <div class="settings-section">
+      <h3>Trace Image</h3>
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('uploadInput').click()">
+        <div class="dz-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 16V4M12 4l-4 4M12 4l4 4"/>
+            <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+          </svg>
+        </div>
+        <div class="dz-title">Drop, paste or click</div>
+        <div class="dz-sub">PNG · SVG · JPG</div>
+        <div class="dz-preview" id="dzPreview"></div>
+      </div>
+
+      <div class="setting-row" style="margin-top:14px">
+        <span class="setting-label">Threshold</span>
+        <span class="setting-value" id="thresholdVal">50%</span>
+      </div>
+      <input type="range" id="threshold" min="5" max="95" value="50" oninput="updateThreshold(this.value)">
+
+      <div class="setting-row" style="margin-top:14px">
+        <span class="setting-label">Invert</span>
+        <label class="toggle">
+          <input type="checkbox" id="invertToggle" onchange="if(lastImage) traceImage(lastImage)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Preview</h3>
+      <div class="preview-grid" id="previewGrid">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <div class="export-section">
+      <h3>SVG Output</h3>
+      <div class="svg-output" id="svgOutput"></div>
+      <button class="btn btn-secondary" style="width:100%;margin-bottom:8px" onclick="copySVG()">Copy SVG</button>
+      <div class="copy-feedback" id="copyFeedback"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let GRID = 12;
+let CELL = 28;
+let PADDING = 2; // safe padding in dots — area outside cannot be drawn
+const GRID_OPTIONS = [8, 9, 10, 12, 16, 20, 24, 32, 40, 48, 64];
+
+let currentSize = 1; // 1=small, 2=medium, 3=large
+let currentMode = 'draw';
+let isDrawing = false;
+let lastCell = null;
+
+// dots[row][col] = size (0 = empty, 1/2/3 = dot size)
+let dots = [];
+
+let icons = JSON.parse(localStorage.getItem('dotGridIcons') || '[]');
+
+let lastImage = null;
+let THRESHOLD = 0.5;
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+function initDots() {
+  dots = Array.from({ length: GRID }, () => new Array(GRID).fill(0));
+}
+
+function initCanvas() {
+  const canvas = document.getElementById('dot-canvas');
+  const total = GRID * CELL;
+  canvas.width = total;
+  canvas.height = total;
+  canvas.style.width = total + 'px';
+  canvas.style.height = total + 'px';
+  render();
+}
+
+renderGridOptions();
+initDots();
+initCanvas();
+renderLibrary();
+updatePreview();
+updateSVGOutput();
+
+function renderGridOptions() {
+  const container = document.getElementById('gridSettings');
+  container.innerHTML = GRID_OPTIONS.map(n =>
+    `<div class="grid-setting${n === GRID ? ' active' : ''}" onclick="setGrid(${n})" id="grid${n}">
+      <span class="val">${n}×${n}</span>${n <= 10 ? 'tiny' : n <= 16 ? 'small' : n <= 24 ? 'medium' : n <= 40 ? 'large' : 'xl'}
+    </div>`
+  ).join('');
+}
+
+function inSafeZone(r, c) {
+  return r >= PADDING && r < GRID - PADDING && c >= PADDING && c < GRID - PADDING;
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function getDotRadius(sizeLevel) {
+  const base = CELL / 2;
+  const sizes = [0, base * 0.35, base * 0.58, base * 0.82];
+  return sizes[sizeLevel];
+}
+
+function render() {
+  const canvas = document.getElementById('dot-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw safe zone background
+  if (PADDING > 0) {
+    const safeStart = PADDING * CELL;
+    const safeSize = (GRID - PADDING * 2) * CELL;
+    ctx.fillStyle = 'rgba(255,255,255,0.015)';
+    ctx.fillRect(safeStart, safeStart, safeSize, safeSize);
+
+    // Dashed border around safe zone
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(safeStart + 0.5, safeStart + 0.5, safeSize - 1, safeSize - 1);
+    ctx.setLineDash([]);
+  }
+
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      const cx = c * CELL + CELL / 2;
+      const cy = r * CELL + CELL / 2;
+      const safe = inSafeZone(r, c);
+
+      // Ghost dot (grid indicator) — dimmer in padding area
+      ctx.beginPath();
+      const ghostR = Math.max(0.5, getDotRadius(1) * 0.5);
+      ctx.arc(cx, cy, ghostR, 0, Math.PI * 2);
+      ctx.fillStyle = safe ? '#262626' : '#171717';
+      ctx.fill();
+
+      // Filled dot — only if in safe zone
+      if (dots[r][c] > 0 && safe) {
+        const radius = getDotRadius(dots[r][c]);
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      }
+    }
+  }
+}
+
+// ─── INTERACTION ─────────────────────────────────────────────────────────────
+const canvas = document.getElementById('dot-canvas');
+
+function getCell(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const col = Math.floor(x / CELL);
+  const row = Math.floor(y / CELL);
+  if (row < 0 || row >= GRID || col < 0 || col >= GRID) return null;
+  return { row, col };
+}
+
+function applyToCell(cell) {
+  if (!cell) return;
+  if (!inSafeZone(cell.row, cell.col)) return; // can't draw in padding
+  const key = `${cell.row},${cell.col}`;
+  if (key === lastCell) return;
+  lastCell = key;
+
+  if (currentMode === 'erase') {
+    dots[cell.row][cell.col] = 0;
+  } else {
+    dots[cell.row][cell.col] = currentSize;
+  }
+  render();
+  updatePreview();
+  updateSVGOutput();
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  isDrawing = true;
+  lastCell = null;
+  if (e.button === 2) {
+    const prev = currentMode;
+    currentMode = 'erase';
+    applyToCell(getCell(e));
+    currentMode = prev;
+  } else {
+    applyToCell(getCell(e));
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (!isDrawing) return;
+  applyToCell(getCell(e));
+});
+
+canvas.addEventListener('mouseup', () => { isDrawing = false; lastCell = null; });
+canvas.addEventListener('mouseleave', () => { isDrawing = false; lastCell = null; });
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// ─── TOOLBAR ─────────────────────────────────────────────────────────────────
+function setSize(s) {
+  currentSize = s;
+  [1, 2, 3].forEach(i => document.getElementById('sz' + i).classList.remove('active'));
+  document.getElementById('sz' + s).classList.add('active');
+}
+
+function setMode(m) {
+  currentMode = m;
+  document.getElementById('modeDraw').classList.toggle('active', m === 'draw');
+  document.getElementById('modeErase').classList.toggle('active', m === 'erase');
+}
+
+// ─── GRID SETTINGS ───────────────────────────────────────────────────────────
+function setGrid(n) {
+  GRID = n;
+  if (PADDING * 2 >= GRID) PADDING = Math.max(0, Math.floor(GRID / 2) - 1);
+  document.getElementById('padding').value = PADDING;
+  document.getElementById('padVal').textContent = PADDING + ' dot' + (PADDING === 1 ? '' : 's');
+  GRID_OPTIONS.forEach(g => {
+    const el = document.getElementById('grid' + g);
+    if (el) el.classList.toggle('active', g === n);
+  });
+  initDots();
+  initCanvas();
+  updatePreview();
+  updateSVGOutput();
+}
+
+function updateCellSize(v) {
+  CELL = parseInt(v);
+  document.getElementById('cellSizeVal').textContent = v + 'px';
+  initCanvas();
+}
+
+function updatePadding(v) {
+  PADDING = parseInt(v);
+  if (PADDING * 2 >= GRID) {
+    PADDING = Math.max(0, Math.floor(GRID / 2) - 1);
+    document.getElementById('padding').value = PADDING;
+  }
+  document.getElementById('padVal').textContent = PADDING + ' dot' + (PADDING === 1 ? '' : 's');
+  // Clear any dots that fall in padding
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      if (!inSafeZone(r, c)) dots[r][c] = 0;
+    }
+  }
+  render();
+  updatePreview();
+  updateSVGOutput();
+}
+
+// ─── SVG GENERATION ──────────────────────────────────────────────────────────
+function generateSVG(dotsData, gridSize, outputSize = 24) {
+  const cellSize = outputSize / gridSize;
+  let circles = '';
+
+  for (let r = 0; r < gridSize; r++) {
+    for (let c = 0; c < gridSize; c++) {
+      if (dotsData[r][c] > 0) {
+        const cx = (c + 0.5) * cellSize;
+        const cy = (r + 0.5) * cellSize;
+        const base = cellSize / 2;
+        const radiusFractions = [0, 0.35, 0.58, 0.82];
+        const radius = base * radiusFractions[dotsData[r][c]];
+        circles += `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${radius.toFixed(2)}"/>`;
+      }
+    }
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${outputSize} ${outputSize}" fill="currentColor">${circles}</svg>`;
+}
+
+function updateSVGOutput() {
+  const svg = generateSVG(dots, GRID);
+  document.getElementById('svgOutput').textContent = svg;
+}
+
+function copySVG() {
+  const svg = generateSVG(dots, GRID);
+  navigator.clipboard.writeText(svg).then(() => {
+    const fb = document.getElementById('copyFeedback');
+    fb.textContent = 'Copied to clipboard!';
+    fb.style.opacity = 1;
+    setTimeout(() => { fb.style.opacity = 0; }, 2000);
+  });
+}
+
+// ─── PREVIEW ─────────────────────────────────────────────────────────────────
+function updatePreview() {
+  const sizes = [16, 24, 48];
+  const container = document.getElementById('previewGrid');
+  container.innerHTML = sizes.map(s => {
+    const svg = generateSVG(dots, GRID, s);
+    return `<div class="preview-size">
+      <div style="background:#1a1a1a;border-radius:${s/8}px;padding:${s/8}px;display:flex;align-items:center;justify-content:center;">
+        ${svg.replace('fill="currentColor"', 'fill="#ffffff"')}
+      </div>
+      <span>${s}px</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── LIBRARY ─────────────────────────────────────────────────────────────────
+function saveIcon() {
+  const name = document.getElementById('iconName').value.trim() || 'untitled';
+  const existing = icons.findIndex(i => i.name === name);
+  const iconData = {
+    name,
+    grid: GRID,
+    padding: PADDING,
+    dots: dots.map(r => [...r]),
+    updatedAt: Date.now()
+  };
+
+  if (existing >= 0) {
+    icons[existing] = iconData;
+  } else {
+    icons.push(iconData);
+  }
+
+  localStorage.setItem('dotGridIcons', JSON.stringify(icons));
+  renderLibrary();
+}
+
+function loadIcon(idx) {
+  const icon = icons[idx];
+  GRID = icon.grid;
+  PADDING = icon.padding ?? 0;
+  dots = icon.dots.map(r => [...r]);
+
+  GRID_OPTIONS.forEach(g => {
+    const el = document.getElementById('grid' + g);
+    if (el) el.classList.toggle('active', g === GRID);
+  });
+  document.getElementById('padding').value = PADDING;
+  document.getElementById('padVal').textContent = PADDING + ' dot' + (PADDING === 1 ? '' : 's');
+
+  document.getElementById('iconName').value = icon.name;
+  initCanvas();
+  render();
+  updatePreview();
+  updateSVGOutput();
+}
+
+function deleteIcon(idx, e) {
+  e.stopPropagation();
+  icons.splice(idx, 1);
+  localStorage.setItem('dotGridIcons', JSON.stringify(icons));
+  renderLibrary();
+}
+
+function renderLibrary() {
+  const list = document.getElementById('iconList');
+  if (icons.length === 0) {
+    list.innerHTML = '<div style="padding:24px 16px;text-align:center;color:#333;font-size:12px;">No icons yet.<br>Draw and save to start.</div>';
+    return;
+  }
+
+  list.innerHTML = icons.map((icon, idx) => {
+    const miniSVG = generateSVG(icon.dots, icon.grid, 24).replace('fill="currentColor"', 'fill="#ffffff"');
+    return `<div class="icon-item" onclick="loadIcon(${idx})">
+      <div class="preview">${miniSVG}</div>
+      <span class="name">${icon.name}</span>
+      <button class="del-btn" onclick="deleteIcon(${idx}, event)">×</button>
+    </div>`;
+  }).join('');
+}
+
+function exportLibrary() {
+  // Export as JS module with all icons
+  const exports = icons.map(icon => {
+    const svg = generateSVG(icon.dots, icon.grid);
+    return `  "${icon.name}": \`${svg}\``;
+  }).join(',\n');
+
+  const jsContent = `// Dot Grid Icon Library
+// Generated by Dot Grid Icon Builder
+// ${icons.length} icons
+
+export const icons = {
+${exports}
+};
+
+export function getIcon(name) {
+  return icons[name] || null;
+}
+`;
+
+  // Also export as SVG sprite
+  const spriteSymbols = icons.map(icon => {
+    const innerSVG = generateSVG(icon.dots, icon.grid);
+    const inner = innerSVG.replace(/<svg[^>]*>/, '').replace('</svg>', '');
+    return `  <symbol id="icon-${icon.name}" viewBox="0 0 24 24">${inner}</symbol>`;
+  }).join('\n');
+
+  const sprite = `<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+${spriteSymbols}
+</svg>`;
+
+  // Download JS
+  downloadFile('dot-grid-icons.js', jsContent, 'text/javascript');
+  setTimeout(() => downloadFile('dot-grid-icons-sprite.svg', sprite, 'image/svg+xml'), 300);
+}
+
+function downloadFile(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function resetLibrary() {
+  if (icons.length === 0) return;
+  if (!confirm(`Xoá hết ${icons.length} icon trong library? Hành động này không thể hoàn tác.`)) return;
+  icons = [];
+  localStorage.removeItem('dotGridIcons');
+  renderLibrary();
+}
+
+// ─── IMAGE TRACE ─────────────────────────────────────────────────────────────
+function handleUpload(event) {
+  const file = event.target.files[0];
+  if (file) loadImageFile(file);
+  event.target.value = '';
+}
+
+function loadImageFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      lastImage = img;
+      const cleanName = (file.name || 'pasted-icon').replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+      document.getElementById('iconName').value = cleanName;
+      updateDropPreview(e.target.result, file.name || 'Pasted image');
+      traceImage(img);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateDropPreview(src, name) {
+  const preview = document.getElementById('dzPreview');
+  preview.classList.add('has-image');
+  preview.innerHTML = `<img src="${src}"><div class="filename">${name}</div>`;
+}
+
+// Drag & drop on dropzone
+(function setupDropzone() {
+  const dz = document.getElementById('dropzone');
+  if (!dz) return;
+
+  ['dragenter', 'dragover'].forEach(ev => {
+    dz.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); dz.classList.add('dragover'); });
+  });
+  ['dragleave', 'drop'].forEach(ev => {
+    dz.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); dz.classList.remove('dragover'); });
+  });
+  dz.addEventListener('drop', (e) => {
+    const file = e.dataTransfer.files[0];
+    if (file) loadImageFile(file);
+  });
+})();
+
+// Drag & drop anywhere on the page
+['dragenter', 'dragover', 'drop'].forEach(ev => {
+  window.addEventListener(ev, (e) => {
+    if (e.target.closest('#dropzone')) return;
+    e.preventDefault();
+  });
+});
+window.addEventListener('drop', (e) => {
+  if (e.target.closest('#dropzone')) return;
+  const file = e.dataTransfer.files[0];
+  if (file) loadImageFile(file);
+});
+
+// Paste from clipboard
+window.addEventListener('paste', (e) => {
+  // Ignore paste in the name input
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  const items = e.clipboardData.items;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) {
+        loadImageFile(file);
+        e.preventDefault();
+        return;
+      }
+    }
+  }
+});
+
+function updateThreshold(v) {
+  THRESHOLD = v / 100;
+  document.getElementById('thresholdVal').textContent = v + '%';
+  if (lastImage) traceImage(lastImage);
+}
+
+function traceImage(img) {
+  // Available area = grid minus padding on both sides
+  const usable = GRID - PADDING * 2;
+  if (usable <= 0) return;
+
+  // Fit image into a square that matches usable cells. Sample at higher res for accuracy.
+  const SAMPLE_PER_CELL = 8;
+  const sampleSize = usable * SAMPLE_PER_CELL;
+
+  const off = document.createElement('canvas');
+  off.width = sampleSize;
+  off.height = sampleSize;
+  const octx = off.getContext('2d');
+
+  // White background so transparent areas count as empty
+  octx.fillStyle = '#ffffff';
+  octx.fillRect(0, 0, sampleSize, sampleSize);
+
+  // Contain fit: preserve aspect ratio, center
+  const ratio = Math.min(sampleSize / img.width, sampleSize / img.height);
+  const w = img.width * ratio;
+  const h = img.height * ratio;
+  const ox = (sampleSize - w) / 2;
+  const oy = (sampleSize - h) / 2;
+  octx.drawImage(img, ox, oy, w, h);
+
+  const imgData = octx.getImageData(0, 0, sampleSize, sampleSize).data;
+  const invert = document.getElementById('invertToggle').checked;
+
+  // Clear dots fresh
+  initDots();
+
+  // For each usable cell, compute coverage = fraction of dark pixels
+  for (let r = 0; r < usable; r++) {
+    for (let c = 0; c < usable; c++) {
+      let darkCount = 0;
+      const total = SAMPLE_PER_CELL * SAMPLE_PER_CELL;
+
+      for (let dy = 0; dy < SAMPLE_PER_CELL; dy++) {
+        for (let dx = 0; dx < SAMPLE_PER_CELL; dx++) {
+          const px = c * SAMPLE_PER_CELL + dx;
+          const py = r * SAMPLE_PER_CELL + dy;
+          const i = (py * sampleSize + px) * 4;
+          const rr = imgData[i], gg = imgData[i+1], bb = imgData[i+2], aa = imgData[i+3];
+
+          // Luminance, considering alpha against white bg
+          const lum = (0.299 * rr + 0.587 * gg + 0.114 * bb) / 255;
+          const alpha = aa / 255;
+          const effective = lum * alpha + 1 * (1 - alpha);
+          const darkness = invert ? effective : 1 - effective;
+
+          if (darkness > THRESHOLD) darkCount++;
+        }
+      }
+
+      const coverage = darkCount / total;
+
+      // Map coverage to dot size: 0=empty, 1=small, 2=medium, 3=large
+      let size = 0;
+      if (coverage > 0.7) size = 3;
+      else if (coverage > 0.35) size = 2;
+      else if (coverage > 0.12) size = 1;
+
+      if (size > 0) {
+        const gridR = PADDING + r;
+        const gridC = PADDING + c;
+        dots[gridR][gridC] = size;
+      }
+    }
+  }
+
+  render();
+  updatePreview();
+  updateSVGOutput();
+}
+
+function clearCanvas() {
+  initDots();
+  render();
+  updatePreview();
+  updateSVGOutput();
+}
+</script>
+</body>
+</html>
