@@ -526,6 +526,7 @@
 
   .icon-btn.draw.active { background: #1a3a25; border-color: #6bff9e; color: #6bff9e; }
   .icon-btn.erase.active { background: #3a1a1a; border-color: #ff6b6b; color: #ff6b6b; }
+  .icon-btn.select.active { background: #1a2a3a; border-color: #6ba3ff; color: #6ba3ff; }
   .icon-btn.neutral:hover { color: #fff; }
   .icon-btn.save:hover { background: #fff; color: #000; border-color: #fff; }
 
@@ -759,6 +760,27 @@
   }
 
 
+  .select-dropdown {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 100%;
+    background: #161616 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 12px center no-repeat;
+    border: 1px solid #262626;
+    border-radius: 6px;
+    color: #eee;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 32px 8px 10px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: inherit;
+  }
+  .select-dropdown:hover { border-color: #444; }
+  .select-dropdown:focus { border-color: #555; }
+  .select-dropdown option { background: #1a1a1a; color: #eee; padding: 8px; }
+
   .grid-settings {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -976,6 +998,11 @@
           <path d="m5 11 9 9"/>
         </svg>
       </button>
+      <button class="icon-btn select" onclick="setMode('select')" id="modeSelect" data-tip="Select · V">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87a.5.5 0 0 0 .35-.85L6.35 2.85a.5.5 0 0 0-.85.36Z"/>
+        </svg>
+      </button>
       <div class="separator"></div>
       <button class="icon-btn neutral" onclick="clearCanvas()" data-tip="Clear canvas">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1049,24 +1076,26 @@
 
     <div class="settings-section">
       <h3>Grid Size</h3>
-      <div class="grid-settings" id="gridSettings"></div>
+      <div class="setting-row">
+        <span class="setting-label">Resolution</span>
+      </div>
+      <select class="select-dropdown" id="gridSelect" onchange="setGrid(parseInt(this.value))"></select>
 
       <div class="setting-row" style="margin-top:14px">
         <span class="setting-label">Safe padding</span>
         <span class="setting-value" id="padVal">2 dots</span>
       </div>
       <input type="range" id="padding" min="0" max="8" value="2" oninput="updatePadding(this.value)">
-
     </div>
 
     <div class="settings-section">
       <h3>Icon Size</h3>
-      <div class="size-presets" id="sizePresets"></div>
-      <div class="setting-row" style="margin-top:12px">
+      <div class="setting-row">
         <span class="setting-label">Output</span>
         <span class="setting-value" id="outputSizeVal">24px</span>
       </div>
-      <input type="range" id="outputSize" min="24" max="300" step="2" value="24" oninput="updateOutputSize(this.value)">
+      <select class="select-dropdown" id="sizeSelect" onchange="setOutputSize(parseInt(this.value))"></select>
+      <input type="range" id="outputSize" min="24" max="300" step="2" value="24" oninput="updateOutputSize(this.value)" style="margin-top:10px">
     </div>
 
     <div class="settings-section">
@@ -1138,6 +1167,14 @@ let currentMode = 'draw';
 let isDrawing = false;
 let lastCell = null;
 
+// ─── SELECTION STATE ─────────────────────────────────────────────────────────
+let selectedCells = new Set(); // "r,c" strings
+let marquee = null; // {r1, c1, r2, c2} during drag
+let dragMove = null; // { startCell, currentOffset:{dr,dc}, originalDots: Map of "r,c" -> dot data }
+
+function selKey(r, c) { return r + ',' + c; }
+function parseKey(k) { const [r, c] = k.split(',').map(Number); return { r, c }; }
+
 // dots[row][col] = {s: 1|2|3, c: '#hex'} or 0 (empty)
 let dots = [];
 
@@ -1179,10 +1216,8 @@ function applySnapshot(snap) {
   dots = snap.dots.map(row => row.map(d => (d && typeof d === 'object') ? { s: d.s, c: d.c } : d));
 
   // Sync UI to restored state
-  GRID_OPTIONS.forEach(g => {
-    const el = document.getElementById('grid' + g);
-    if (el) el.classList.toggle('active', g === GRID);
-  });
+  const gSel = document.getElementById('gridSelect');
+  if (gSel) gSel.value = GRID;
   const padInput = document.getElementById('padding');
   if (padInput) {
     padInput.value = PADDING;
@@ -1498,10 +1533,14 @@ function setTraceLevels(n) {
 }
 
 function renderSizePresets() {
-  const container = document.getElementById('sizePresets');
-  if (!container) return;
-  container.innerHTML = SIZE_PRESETS.map(s =>
-    `<div class="size-preset${s === OUTPUT_SIZE ? ' active' : ''}" onclick="setOutputSize(${s})">${s}px</div>`
+  const select = document.getElementById('sizeSelect');
+  if (!select) return;
+  // Build list: presets + 'Custom' if current value isn't a preset
+  const options = [...SIZE_PRESETS];
+  if (!options.includes(OUTPUT_SIZE)) options.push(OUTPUT_SIZE);
+  options.sort((a, b) => a - b);
+  select.innerHTML = options.map(s =>
+    `<option value="${s}"${s === OUTPUT_SIZE ? ' selected' : ''}>${s}px${SIZE_PRESETS.includes(s) ? '' : ' (custom)'}</option>`
   ).join('');
 }
 
@@ -1517,20 +1556,17 @@ function setOutputSize(px) {
 function updateOutputSize(v) {
   OUTPUT_SIZE = parseInt(v);
   document.getElementById('outputSizeVal').textContent = OUTPUT_SIZE + 'px';
-  // Update active state on presets
-  document.querySelectorAll('.size-preset').forEach(el => {
-    el.classList.toggle('active', parseInt(el.textContent) === OUTPUT_SIZE);
-  });
+  renderSizePresets(); // refresh dropdown (may include custom entry)
   updateSVGOutput();
   updateMetaSize();
 }
 
 function renderGridOptions() {
-  const container = document.getElementById('gridSettings');
-  container.innerHTML = GRID_OPTIONS.map(n =>
-    `<div class="grid-setting${n === GRID ? ' active' : ''}" onclick="setGrid(${n})" id="grid${n}">
-      <span class="val">${n}×${n}</span>${n <= 10 ? 'tiny' : n <= 16 ? 'small' : n <= 24 ? 'medium' : n <= 40 ? 'large' : 'xl'}
-    </div>`
+  const select = document.getElementById('gridSelect');
+  if (!select) return;
+  const labelOf = n => n <= 10 ? 'Tiny' : n <= 16 ? 'Small' : n <= 24 ? 'Medium' : n <= 40 ? 'Large' : 'XL';
+  select.innerHTML = GRID_OPTIONS.map(n =>
+    `<option value="${n}"${n === GRID ? ' selected' : ''}>${n}×${n} · ${labelOf(n)}</option>`
   ).join('');
 }
 
@@ -1566,6 +1602,33 @@ function render() {
     ctx.setLineDash([]);
   }
 
+  // Build a map of dots to render at offset (for drag-move preview)
+  let renderDots = dots;
+  let hiddenSet = null;
+  if (dragMove && dragMove.currentOffset) {
+    hiddenSet = new Set(); // original positions to hide
+    const previewMap = new Map(); // "r,c" -> dot
+    const { dr, dc } = dragMove.currentOffset;
+    for (const k of selectedCells) {
+      const { r, c } = parseKey(k);
+      hiddenSet.add(k);
+      const nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID && inSafeZone(nr, nc)) {
+        previewMap.set(selKey(nr, nc), dots[r][c]);
+      }
+    }
+    // Apply preview
+    renderDots = dots.map(row => row.slice());
+    for (const k of hiddenSet) {
+      const { r, c } = parseKey(k);
+      renderDots[r][c] = 0;
+    }
+    for (const [k, d] of previewMap) {
+      const { r, c } = parseKey(k);
+      renderDots[r][c] = d;
+    }
+  }
+
   for (let r = 0; r < GRID; r++) {
     for (let c = 0; c < GRID; c++) {
       const cx = c * CELL + CELL / 2;
@@ -1580,7 +1643,7 @@ function render() {
       ctx.fill();
 
       // Filled dot — only if in safe zone
-      const d = dots[r][c];
+      const d = renderDots[r][c];
       if (d && safe) {
         const radius = getDotRadius(dotSize(d));
         ctx.beginPath();
@@ -1588,6 +1651,46 @@ function render() {
         ctx.fillStyle = dotColor(d);
         ctx.fill();
       }
+    }
+  }
+
+  // Selection highlights — drawn on top
+  if (currentMode === 'select') {
+    // Compute which cells to highlight (accounting for drag preview offset)
+    let highlightCells = selectedCells;
+    if (dragMove && dragMove.currentOffset) {
+      const { dr, dc } = dragMove.currentOffset;
+      highlightCells = new Set();
+      for (const k of selectedCells) {
+        const { r, c } = parseKey(k);
+        const nr = r + dr, nc = c + dc;
+        if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID) highlightCells.add(selKey(nr, nc));
+      }
+    }
+    for (const k of highlightCells) {
+      const { r, c } = parseKey(k);
+      const cx = c * CELL + CELL / 2;
+      const cy = r * CELL + CELL / 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, CELL * 0.46, 0, Math.PI * 2);
+      ctx.strokeStyle = '#6ba3ff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    // Marquee rectangle
+    if (marquee) {
+      const x = Math.min(marquee.c1, marquee.c2) * CELL;
+      const y = Math.min(marquee.r1, marquee.r2) * CELL;
+      const w = (Math.abs(marquee.c2 - marquee.c1) + 1) * CELL;
+      const h = (Math.abs(marquee.r2 - marquee.r1) + 1) * CELL;
+      ctx.fillStyle = 'rgba(107, 163, 255, 0.08)';
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = '#6ba3ff';
+      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+      ctx.setLineDash([]);
     }
   }
 }
@@ -1625,35 +1728,143 @@ function applyToCell(cell) {
 let strokeStartSnapshot = null;
 canvas.addEventListener('mousedown', (e) => {
   e.preventDefault();
+  const cell = getCell(e);
+
+  // ─── SELECT MODE ───────────────────────────────────────────────────────────
+  if (currentMode === 'select') {
+    if (!cell) return;
+    const key = selKey(cell.row, cell.col);
+    const hasDot = !!dots[cell.row][cell.col];
+    const inSel = selectedCells.has(key);
+
+    if (hasDot && inSel) {
+      // Start drag-move of current selection
+      strokeStartSnapshot = snapshot();
+      dragMove = { startCell: cell, currentOffset: { dr: 0, dc: 0 } };
+    } else if (hasDot) {
+      // Select this dot (replace or add with shift)
+      if (!e.shiftKey) selectedCells.clear();
+      selectedCells.add(key);
+      strokeStartSnapshot = snapshot();
+      dragMove = { startCell: cell, currentOffset: { dr: 0, dc: 0 } };
+    } else {
+      // Start marquee
+      if (!e.shiftKey) selectedCells.clear();
+      marquee = { r1: cell.row, c1: cell.col, r2: cell.row, c2: cell.col };
+    }
+    render();
+    return;
+  }
+
+  // ─── DRAW / ERASE ──────────────────────────────────────────────────────────
   isDrawing = true;
   lastCell = null;
   strokeStartSnapshot = snapshot();
   if (e.button === 2) {
     const prev = currentMode;
     currentMode = 'erase';
-    applyToCell(getCell(e));
+    applyToCell(cell);
     currentMode = prev;
   } else {
-    applyToCell(getCell(e));
+    applyToCell(cell);
   }
 });
 
 canvas.addEventListener('mousemove', (e) => {
+  const cell = getCell(e);
+
+  if (currentMode === 'select') {
+    if (marquee && cell) {
+      marquee.r2 = cell.row;
+      marquee.c2 = cell.col;
+      render();
+    } else if (dragMove && cell) {
+      dragMove.currentOffset = {
+        dr: cell.row - dragMove.startCell.row,
+        dc: cell.col - dragMove.startCell.col,
+      };
+      render();
+    }
+    return;
+  }
+
   if (!isDrawing) return;
-  applyToCell(getCell(e));
+  applyToCell(cell);
 });
 
 function commitStroke() {
   if (strokeStartSnapshot) {
-    // Only push history if dots actually changed
     const before = JSON.stringify(strokeStartSnapshot.dots);
     const after = JSON.stringify(dots);
     if (before !== after) pushHistory();
     strokeStartSnapshot = null;
   }
 }
-canvas.addEventListener('mouseup', () => { isDrawing = false; lastCell = null; commitStroke(); });
-canvas.addEventListener('mouseleave', () => { if (isDrawing) commitStroke(); isDrawing = false; lastCell = null; });
+
+function commitMarquee() {
+  if (!marquee) return;
+  const r1 = Math.min(marquee.r1, marquee.r2);
+  const r2 = Math.max(marquee.r1, marquee.r2);
+  const c1 = Math.min(marquee.c1, marquee.c2);
+  const c2 = Math.max(marquee.c1, marquee.c2);
+  for (let r = r1; r <= r2; r++) {
+    for (let c = c1; c <= c2; c++) {
+      if (dots[r][c] && inSafeZone(r, c)) selectedCells.add(selKey(r, c));
+    }
+  }
+  marquee = null;
+}
+
+function commitDragMove() {
+  if (!dragMove) return;
+  const { dr, dc } = dragMove.currentOffset || { dr: 0, dc: 0 };
+  if (dr !== 0 || dc !== 0) {
+    // Move selected dots
+    const moves = []; // {fromKey, toR, toC, dot}
+    for (const k of selectedCells) {
+      const { r, c } = parseKey(k);
+      const nr = r + dr, nc = c + dc;
+      moves.push({ fromR: r, fromC: c, toR: nr, toC: nc, dot: dots[r][c] });
+    }
+    // Clear original positions
+    for (const m of moves) dots[m.fromR][m.fromC] = 0;
+    // Place at new positions (validate bounds + safe zone)
+    const newSel = new Set();
+    for (const m of moves) {
+      if (m.toR >= 0 && m.toR < GRID && m.toC >= 0 && m.toC < GRID && inSafeZone(m.toR, m.toC)) {
+        dots[m.toR][m.toC] = m.dot;
+        newSel.add(selKey(m.toR, m.toC));
+      }
+    }
+    selectedCells = newSel;
+    commitStroke();
+  } else {
+    strokeStartSnapshot = null;
+  }
+  dragMove = null;
+}
+
+canvas.addEventListener('mouseup', () => {
+  if (currentMode === 'select') {
+    if (marquee) commitMarquee();
+    if (dragMove) { commitDragMove(); updatePreview(); updateSVGOutput(); renderLibrary(); }
+    render();
+    return;
+  }
+  isDrawing = false;
+  lastCell = null;
+  commitStroke();
+});
+canvas.addEventListener('mouseleave', () => {
+  if (currentMode === 'select') {
+    if (marquee) { commitMarquee(); render(); }
+    if (dragMove) { commitDragMove(); render(); }
+    return;
+  }
+  if (isDrawing) commitStroke();
+  isDrawing = false;
+  lastCell = null;
+});
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
 // ─── TOOLBAR ─────────────────────────────────────────────────────────────────
@@ -1676,6 +1887,19 @@ function setMode(m) {
   currentMode = m;
   document.getElementById('modeDraw').classList.toggle('active', m === 'draw');
   document.getElementById('modeErase').classList.toggle('active', m === 'erase');
+  document.getElementById('modeSelect').classList.toggle('active', m === 'select');
+
+  // Update canvas cursor
+  const canvasEl = document.getElementById('dot-canvas');
+  if (canvasEl) {
+    canvasEl.style.cursor = m === 'select' ? 'default' : 'crosshair';
+  }
+
+  // Clear selection when leaving select mode
+  if (m !== 'select' && selectedCells.size > 0) {
+    selectedCells.clear();
+    render();
+  }
 }
 
 // Keyboard shortcuts
@@ -1694,15 +1918,77 @@ document.addEventListener('keydown', (e) => {
       return;
     }
     if (e.key === 'y' || e.key === 'Y') { e.preventDefault(); redo(); return; }
+    if (e.key === 'a' || e.key === 'A') { e.preventDefault(); selectAll(); return; }
     return;
   }
 
   if (e.key === 'd' || e.key === 'D') setMode('draw');
   else if (e.key === 'e' || e.key === 'E') setMode('erase');
+  else if (e.key === 'v' || e.key === 'V') setMode('select');
   else if (e.key === '1') setSize(1);
   else if (e.key === '2') setSize(2);
   else if (e.key === '3') setSize(3);
+  else if (e.key === 'Escape' && currentMode === 'select') {
+    selectedCells.clear(); render();
+  }
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && currentMode === 'select' && selectedCells.size > 0) {
+    e.preventDefault();
+    deleteSelected();
+  }
+  else if (currentMode === 'select' && selectedCells.size > 0 && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+    e.preventDefault();
+    const dr = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0;
+    const dc = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+    nudgeSelected(dr, dc);
+  }
 });
+
+function selectAll() {
+  setMode('select');
+  selectedCells.clear();
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      if (dots[r][c] && inSafeZone(r, c)) selectedCells.add(selKey(r, c));
+    }
+  }
+  render();
+}
+
+function deleteSelected() {
+  const before = JSON.stringify(dots);
+  for (const k of selectedCells) {
+    const { r, c } = parseKey(k);
+    dots[r][c] = 0;
+  }
+  selectedCells.clear();
+  render();
+  updatePreview();
+  updateSVGOutput();
+  renderLibrary();
+  if (JSON.stringify(dots) !== before) pushHistory();
+}
+
+function nudgeSelected(dr, dc) {
+  const before = JSON.stringify(dots);
+  const moves = [];
+  for (const k of selectedCells) {
+    const { r, c } = parseKey(k);
+    moves.push({ fromR: r, fromC: c, toR: r + dr, toC: c + dc, dot: dots[r][c] });
+  }
+  // Validate all destinations
+  for (const m of moves) {
+    if (m.toR < 0 || m.toR >= GRID || m.toC < 0 || m.toC >= GRID || !inSafeZone(m.toR, m.toC)) return;
+  }
+  for (const m of moves) dots[m.fromR][m.fromC] = 0;
+  const newSel = new Set();
+  for (const m of moves) { dots[m.toR][m.toC] = m.dot; newSel.add(selKey(m.toR, m.toC)); }
+  selectedCells = newSel;
+  render();
+  updatePreview();
+  updateSVGOutput();
+  renderLibrary();
+  if (JSON.stringify(dots) !== before) pushHistory();
+}
 
 // Wheel zoom (Cmd/Ctrl + scroll)
 document.querySelector('.canvas-wrapper')?.addEventListener('wheel', (e) => {
@@ -1721,10 +2007,8 @@ function setGrid(n) {
   if (PADDING * 2 >= GRID) PADDING = Math.max(0, Math.floor(GRID / 2) - 1);
   document.getElementById('padding').value = PADDING;
   document.getElementById('padVal').textContent = PADDING + ' dot' + (PADDING === 1 ? '' : 's');
-  GRID_OPTIONS.forEach(g => {
-    const el = document.getElementById('grid' + g);
-    if (el) el.classList.toggle('active', g === n);
-  });
+  const sel = document.getElementById('gridSelect');
+  if (sel) sel.value = n;
 
   // Re-anchor existing dots into the new grid (centered)
   dots = Array.from({ length: GRID }, () => new Array(GRID).fill(0));
@@ -1855,10 +2139,8 @@ function loadIcon(idx) {
   PADDING = icon.padding ?? 0;
   dots = icon.dots.map(r => [...r]);
 
-  GRID_OPTIONS.forEach(g => {
-    const el = document.getElementById('grid' + g);
-    if (el) el.classList.toggle('active', g === GRID);
-  });
+  const gridSelectEl = document.getElementById('gridSelect');
+  if (gridSelectEl) gridSelectEl.value = GRID;
   document.getElementById('padding').value = PADDING;
   document.getElementById('padVal').textContent = PADDING + ' dot' + (PADDING === 1 ? '' : 's');
 
