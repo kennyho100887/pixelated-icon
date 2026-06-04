@@ -46,6 +46,7 @@
 
   .icon-name-input:focus { outline: none; border-color: #555; }
 
+
   .btn {
     padding: 6px 14px;
     border-radius: 6px;
@@ -73,14 +74,40 @@
 
   /* LEFT PANEL */
   .left-panel {
-    width: 220px;
+    width: 240px;
+    min-width: 180px;
+    max-width: 480px;
     border-right: 1px solid #222;
     background: #111;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     flex-shrink: 0;
+    position: relative;
   }
+
+  .panel-resize {
+    position: absolute;
+    top: 0;
+    right: -3px;
+    width: 6px;
+    height: 100%;
+    cursor: ew-resize;
+    z-index: 10;
+    background: transparent;
+    transition: background 0.15s;
+  }
+  .panel-resize:hover, .panel-resize.active { background: rgba(255, 255, 255, 0.08); }
+  .panel-resize::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: transparent;
+    transition: background 0.15s;
+  }
+  .panel-resize:hover::after, .panel-resize.active::after { background: rgba(255, 255, 255, 0.3); }
 
   .panel-title {
     padding: 12px 16px;
@@ -90,7 +117,54 @@
     text-transform: uppercase;
     color: #666;
     border-bottom: 1px solid #1e1e1e;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
+
+  .view-toggle {
+    display: flex;
+    background: #161616;
+    border: 1px solid #262626;
+    border-radius: 6px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .view-toggle button {
+    background: transparent;
+    border: none;
+    color: #555;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.12s;
+  }
+  .view-toggle button:hover { color: #ccc; }
+  .view-toggle button.active { background: #2a2a2a; color: #fff; }
+
+  /* New icon button at top of list */
+  .new-icon-btn {
+    margin: 8px;
+    padding: 9px 10px;
+    background: #161616;
+    border: 1px dashed #2e2e2e;
+    color: #888;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .new-icon-btn:hover { background: #1c1c1c; color: #fff; border-color: #444; border-style: solid; }
 
   .icon-list {
     flex: 1;
@@ -102,7 +176,13 @@
   .icon-list::-webkit-scrollbar-track { background: transparent; }
   .icon-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 
-  .icon-item {
+  /* LIST view */
+  .icon-list.view-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .icon-list.view-list .icon-item {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -111,12 +191,11 @@
     cursor: pointer;
     transition: all 0.1s;
     border: 1px solid transparent;
+    position: relative;
   }
-
-  .icon-item:hover { background: #1a1a1a; }
-  .icon-item.active { background: #1a1a1a; border-color: #333; }
-
-  .icon-item .preview {
+  .icon-list.view-list .icon-item:hover { background: #1a1a1a; }
+  .icon-list.view-list .icon-item.active { background: #1a1a1a; border-color: #333; }
+  .icon-list.view-list .icon-item .preview {
     width: 32px;
     height: 32px;
     background: #161616;
@@ -126,10 +205,8 @@
     justify-content: center;
     flex-shrink: 0;
   }
-
-  .icon-item .preview svg { width: 24px; height: 24px; }
-
-  .icon-item .name {
+  .icon-list.view-list .icon-item .preview svg { width: 24px; height: 24px; }
+  .icon-list.view-list .icon-item .name {
     font-size: 12px;
     color: #ccc;
     flex: 1;
@@ -138,34 +215,229 @@
     white-space: nowrap;
   }
 
-  .icon-item .del-btn {
-    opacity: 0;
-    font-size: 14px;
-    color: #666;
+  /* GRID view */
+  .icon-list.view-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    align-content: start;
+    grid-auto-rows: min-content;
+  }
+  .icon-list.view-grid .icon-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 8px 10px;
+    border-radius: 8px;
     cursor: pointer;
-    padding: 2px 4px;
-    border-radius: 4px;
     transition: all 0.1s;
-    line-height: 1;
-    background: none;
-    border: none;
+    border: 1px solid transparent;
+    background: #141414;
+    position: relative;
+    overflow: hidden;
+  }
+  .icon-list.view-grid .icon-item:hover { background: #1a1a1a; border-color: #2a2a2a; }
+  .icon-list.view-grid .icon-item.active { background: #1a1a1a; border-color: #444; }
+  .icon-list.view-grid .icon-item .preview {
+    width: 100%;
+    aspect-ratio: 1;
+    background: #0e0e0e;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .icon-list.view-grid .icon-item .preview svg { width: 64%; height: 64%; }
+  .icon-list.view-grid .icon-item .name {
+    font-size: 10px;
+    color: #aaa;
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .icon-item:hover .del-btn { opacity: 1; }
-  .icon-item .del-btn:hover { color: #ff6b6b; background: #2a1515; }
+  /* Quick actions (download + delete) */
+  .quick-actions {
+    position: absolute;
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.12s;
+    z-index: 2;
+  }
+  .icon-list.view-grid .quick-actions {
+    top: 4px;
+    right: 4px;
+  }
+  .icon-list.view-list .quick-actions {
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+  }
+  .icon-item:hover .quick-actions { opacity: 1; }
+  .quick-actions button {
+    background: rgba(20, 20, 20, 0.85);
+    backdrop-filter: blur(6px);
+    border: 1px solid #2a2a2a;
+    color: #aaa;
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.12s;
+  }
+  .quick-actions button:hover { color: #fff; background: #2a2a2a; }
+  .quick-actions button.delete:hover { color: #ff6b6b; background: #2a1515; border-color: #5a2a2a; }
 
   /* CENTER - CANVAS */
   .center {
     flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 24px;
     background: #0f0f0f;
     position: relative;
     overflow: hidden;
   }
+
+  .canvas-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .canvas-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    width: fit-content;
+  }
+
+  /* Floating dockable toolbar */
+  .toolbar-dock {
+    position: absolute;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(20, 20, 20, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid #262626;
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    transition: opacity 0.15s, box-shadow 0.15s;
+    user-select: none;
+  }
+  .toolbar-dock.dragging {
+    opacity: 0.85;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+    cursor: grabbing !important;
+    transition: none;
+  }
+
+  /* Dock positions */
+  .toolbar-dock.dock-top { top: 16px; left: 50%; transform: translateX(-50%); }
+  .toolbar-dock.dock-bottom { bottom: 16px; left: 50%; transform: translateX(-50%); }
+  .toolbar-dock.dock-left { left: 16px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+  .toolbar-dock.dock-right { right: 16px; top: 50%; transform: translateY(-50%); flex-direction: column; }
+
+  /* When vertical, toolbar inner direction also flips */
+  .toolbar-dock.dock-left .toolbar,
+  .toolbar-dock.dock-right .toolbar { flex-direction: column; }
+  .toolbar-dock.dock-left .separator,
+  .toolbar-dock.dock-right .separator { width: 22px; height: 1px; margin: 4px 0; }
+  .toolbar-dock.dock-left .color-palette,
+  .toolbar-dock.dock-right .color-palette { flex-direction: column; }
+
+  /* Drag handle */
+  .drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 36px;
+    cursor: grab;
+    color: #444;
+    flex-shrink: 0;
+    border-radius: 6px;
+    transition: color 0.12s, background 0.12s;
+  }
+  .drag-handle:hover { color: #aaa; background: #1f1f1f; }
+  .drag-handle:active { cursor: grabbing; }
+  .toolbar-dock.dock-left .drag-handle,
+  .toolbar-dock.dock-right .drag-handle { width: 36px; height: 18px; }
+  .drag-handle svg { display: block; }
+
+  /* Snap zone highlights */
+  .snap-zone {
+    position: absolute;
+    z-index: 40;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1.5px dashed rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+  }
+  .snap-zone.visible { opacity: 1; }
+  .snap-zone.target { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.5); border-style: solid; }
+  .snap-zone.zone-top { top: 12px; left: 50%; transform: translateX(-50%); width: 280px; height: 56px; }
+  .snap-zone.zone-bottom { bottom: 12px; left: 50%; transform: translateX(-50%); width: 280px; height: 56px; }
+  .snap-zone.zone-left { left: 12px; top: 50%; transform: translateY(-50%); width: 56px; height: 280px; }
+  .snap-zone.zone-right { right: 12px; top: 50%; transform: translateY(-50%); width: 56px; height: 280px; }
+
+  .canvas-meta {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0 2px;
+  }
+
+  .canvas-meta-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: #555;
+    outline: none;
+    cursor: text;
+    transition: color 0.15s;
+    letter-spacing: 0.01em;
+    min-width: 40px;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .canvas-meta-name:hover { color: #888; }
+  .canvas-meta-name:focus { color: #f0f0f0; }
+  .canvas-meta-name:empty::before {
+    content: 'icon-name';
+    color: #2e2e2e;
+  }
+
+  .canvas-meta-size {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #444;
+    font-family: 'SF Mono', monospace;
+    letter-spacing: 0.02em;
+  }
+  .canvas-meta-size svg { opacity: 0.6; }
 
   .canvas-wrapper {
     position: relative;
@@ -190,18 +462,18 @@
   /* BRUSH SIZE TOOLBAR */
   .toolbar {
     display: flex;
+    flex-direction: row;
     align-items: center;
-    gap: 8px;
-    background: #161616;
-    border: 1px solid #222;
-    border-radius: 10px;
-    padding: 8px 12px;
+    gap: 6px;
   }
 
   .toolbar-label {
-    font-size: 11px;
+    font-size: 9px;
     color: #555;
-    font-weight: 500;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 0;
   }
 
   .size-btn {
@@ -227,25 +499,159 @@
     pointer-events: none;
   }
 
-  .separator { width: 1px; height: 20px; background: #282828; margin: 0 4px; }
+  .separator { width: 1px; height: 22px; background: #282828; margin: 0 6px; }
 
-  .mode-btn {
-    padding: 6px 12px;
-    border-radius: 6px;
+  .color-palette { display: flex; flex-direction: row; gap: 6px; align-items: center; }
+
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
     cursor: pointer;
     border: 1px solid transparent;
+    background: transparent;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.12s;
+  }
+  .icon-btn:hover { background: #222; color: #fff; border-color: #2e2e2e; }
+
+  .icon-btn.draw.active { background: #1a3a25; border-color: #6bff9e; color: #6bff9e; }
+  .icon-btn.erase.active { background: #3a1a1a; border-color: #ff6b6b; color: #ff6b6b; }
+  .icon-btn.neutral:hover { color: #fff; }
+  .icon-btn.save:hover { background: #fff; color: #000; border-color: #fff; }
+
+  .icon-btn.zoom-display {
+    width: auto;
+    min-width: 48px;
+    padding: 0 8px;
     font-size: 11px;
+    font-family: 'SF Mono', monospace;
     font-weight: 500;
-    transition: all 0.1s;
+    color: #aaa;
   }
 
-  .mode-btn.erase { color: #ff6b6b; background: transparent; border-color: transparent; }
-  .mode-btn.erase:hover { background: #2a1515; border-color: #5a2a2a; }
-  .mode-btn.erase.active { background: #3a1a1a; border-color: #ff6b6b; }
+  /* Tooltip — default: below */
+  [data-tip] { position: relative; }
+  [data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    background: #1f1f1f;
+    color: #f5f5f5;
+    padding: 5px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1000;
+    border: 1px solid #2e2e2e;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  [data-tip]:hover::before {
+    content: '';
+    position: absolute;
+    border: 4px solid transparent;
+    pointer-events: none;
+    z-index: 1000;
+  }
 
-  .mode-btn.draw { color: #6bff9e; background: transparent; border-color: transparent; }
-  .mode-btn.draw:hover { background: #152a1e; border-color: #2a5a3a; }
-  .mode-btn.draw.active { background: #1a3a25; border-color: #6bff9e; }
+  /* Default + tip-bottom: tooltip appears BELOW element */
+  [data-tip]:hover::after,
+  .tip-bottom [data-tip]:hover::after {
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    animation: tipInBottom 0.12s ease-out;
+  }
+  [data-tip]:hover::before,
+  .tip-bottom [data-tip]:hover::before {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-bottom-color: #1f1f1f;
+  }
+
+  /* tip-top: tooltip ABOVE element */
+  .tip-top [data-tip]:hover::after {
+    top: auto; bottom: calc(100% + 8px);
+    left: 50%; transform: translateX(-50%);
+    animation: tipInTop 0.12s ease-out;
+  }
+  .tip-top [data-tip]:hover::before {
+    top: auto; bottom: 100%;
+    left: 50%; transform: translateX(-50%);
+    border-bottom-color: transparent;
+    border-top-color: #1f1f1f;
+  }
+
+  /* tip-right: tooltip to the RIGHT of element */
+  .tip-right [data-tip]:hover::after {
+    top: 50%; left: calc(100% + 8px);
+    transform: translateY(-50%);
+    animation: tipInRight 0.12s ease-out;
+  }
+  .tip-right [data-tip]:hover::before {
+    top: 50%; left: 100%;
+    transform: translateY(-50%);
+    border-bottom-color: transparent;
+    border-right-color: #1f1f1f;
+  }
+
+  /* tip-left: tooltip to the LEFT of element */
+  .tip-left [data-tip]:hover::after {
+    top: 50%; right: calc(100% + 8px);
+    left: auto; transform: translateY(-50%);
+    animation: tipInLeft 0.12s ease-out;
+  }
+  .tip-left [data-tip]:hover::before {
+    top: 50%; right: 100%;
+    left: auto; transform: translateY(-50%);
+    border-bottom-color: transparent;
+    border-left-color: #1f1f1f;
+  }
+
+  @keyframes tipInBottom {
+    from { opacity: 0; transform: translateX(-50%) translateY(-2px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  @keyframes tipInTop {
+    from { opacity: 0; transform: translateX(-50%) translateY(2px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  @keyframes tipInRight {
+    from { opacity: 0; transform: translateY(-50%) translateX(-2px); }
+    to { opacity: 1; transform: translateY(-50%) translateX(0); }
+  }
+  @keyframes tipInLeft {
+    from { opacity: 0; transform: translateY(-50%) translateX(2px); }
+    to { opacity: 1; transform: translateY(-50%) translateX(0); }
+  }
+
+  .color-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.3);
+    transition: transform 0.1s, border-color 0.1s;
+    position: relative;
+  }
+  .color-swatch:hover { transform: scale(1.12); }
+  .color-swatch.active { border-color: #fff; box-shadow: inset 0 0 0 2px #000, 0 0 0 1px rgba(255,255,255,0.2); }
+  .color-swatch.custom {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ffd93d 33%, #6bff9e 66%, #6ba3ff 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .color-swatch.custom input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+  .color-swatch.custom svg { pointer-events: none; }
 
   /* RIGHT PANEL */
   .right-panel {
@@ -342,25 +748,41 @@
   }
 
   /* Preview sizes */
-  .preview-grid {
+  .preview-row {
     display: flex;
-    gap: 12px;
-    align-items: flex-end;
-    margin-bottom: 16px;
+    gap: 4px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #1e1e1e;
   }
+  .preview-row.dark { background: #0a0a0a; }
+  .preview-row.light { background: #f5f5f5; }
 
-  .preview-size {
+  .preview-cell {
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 4px 6px;
+    min-width: 0;
   }
-
-  .preview-size svg { display: block; }
-  .preview-size span {
-    font-size: 10px;
-    color: #444;
+  .preview-cell .icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 56px;
   }
+  .preview-cell svg { display: block; }
+  .preview-cell .size-label {
+    font-size: 9px;
+    font-family: 'SF Mono', monospace;
+    letter-spacing: 0.02em;
+  }
+  .preview-row.dark .size-label { color: #444; }
+  .preview-row.light .size-label { color: #999; }
 
   .grid-settings {
     display: grid;
@@ -387,6 +809,26 @@
   .grid-setting.active { border-color: #555; background: #1e1e1e; color: #fff; }
   .grid-setting .val { font-size: 12px; font-weight: 600; color: #fff; display: block; margin-bottom: 1px; letter-spacing: 0; text-transform: none; }
   .grid-setting.active .val { color: #fff; }
+
+  .size-presets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+  .size-preset {
+    background: #161616;
+    border: 1px solid #222;
+    border-radius: 5px;
+    padding: 6px 0;
+    font-size: 10px;
+    font-weight: 500;
+    color: #888;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.1s;
+  }
+  .size-preset:hover { border-color: #444; color: #fff; }
+  .size-preset.active { background: #1e1e1e; border-color: #555; color: #fff; }
 
   /* Toggle switch */
   .toggle { position: relative; display: inline-block; width: 32px; height: 18px; }
@@ -449,10 +891,8 @@
 <header>
   <h1>Dot Grid Icons</h1>
   <input type="text" class="icon-name-input" id="iconName" placeholder="icon-name" value="new-icon">
-  <button class="btn btn-secondary" onclick="clearCanvas()">Clear</button>
-  <button class="btn btn-secondary" onclick="document.getElementById('uploadInput').click()">Trace Image</button>
   <input type="file" id="uploadInput" accept="image/*" style="display:none" onchange="handleUpload(event)">
-  <button class="btn btn-primary" onclick="saveIcon()">Save Icon</button>
+
   <div class="spacer"></div>
   <button class="btn btn-danger" onclick="resetLibrary()">Reset All</button>
   <button class="btn btn-secondary" onclick="exportLibrary()">Export Library</button>
@@ -462,39 +902,130 @@
 
   <!-- LEFT: Icon Library -->
   <div class="left-panel">
-    <div class="panel-title">Library</div>
-    <div class="icon-list" id="iconList">
-      <div style="padding:24px 16px;text-align:center;color:#333;font-size:12px;">
+    <div class="panel-title">
+      <span>Library</span>
+      <div class="view-toggle">
+        <button id="viewGridBtn" onclick="setLibraryView('grid')" data-tip="Grid view">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </button>
+        <button id="viewListBtn" onclick="setLibraryView('list')" data-tip="List view">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <button class="new-icon-btn" onclick="newIcon()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      New Icon
+    </button>
+    <div class="icon-list view-grid" id="iconList">
+      <div style="padding:24px 16px;text-align:center;color:#333;font-size:12px;grid-column:1/-1;">
         No icons yet.<br>Draw and save to start.
       </div>
     </div>
+    <div class="panel-resize" id="panelResize"></div>
   </div>
 
   <!-- CENTER: Canvas -->
   <div class="center">
 
-    <div class="toolbar">
-      <span class="toolbar-label">Size</span>
-      <button class="size-btn active" onclick="setSize(1)" id="sz1" title="Small">
+    <!-- Snap zones (shown while dragging) -->
+    <div class="snap-zone zone-top" id="snapTop"></div>
+    <div class="snap-zone zone-bottom" id="snapBottom"></div>
+    <div class="snap-zone zone-left" id="snapLeft"></div>
+    <div class="snap-zone zone-right" id="snapRight"></div>
+
+    <!-- Floating dockable toolbar -->
+    <div class="toolbar-dock dock-top" id="toolbarDock">
+      <div class="drag-handle" id="dragHandle" data-tip="Drag to dock">
+        <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2.5" cy="3" r="1.2"/><circle cx="7.5" cy="3" r="1.2"/><circle cx="2.5" cy="8" r="1.2"/><circle cx="7.5" cy="8" r="1.2"/><circle cx="2.5" cy="13" r="1.2"/><circle cx="7.5" cy="13" r="1.2"/></svg>
+      </div>
+    <div class="toolbar" id="toolbar">
+      <button class="size-btn active" onclick="setSize(1)" id="sz1" data-tip="Small dot · 1">
         <div class="dot-preview" style="width:6px;height:6px"></div>
       </button>
-      <button class="size-btn" onclick="setSize(2)" id="sz2" title="Medium">
+      <button class="size-btn" onclick="setSize(2)" id="sz2" data-tip="Medium dot · 2">
         <div class="dot-preview" style="width:10px;height:10px"></div>
       </button>
-      <button class="size-btn" onclick="setSize(3)" id="sz3" title="Large">
+      <button class="size-btn" onclick="setSize(3)" id="sz3" data-tip="Large dot · 3">
         <div class="dot-preview" style="width:14px;height:14px"></div>
       </button>
       <div class="separator"></div>
-      <button class="mode-btn draw active" onclick="setMode('draw')" id="modeDraw">Draw</button>
-      <button class="mode-btn erase" onclick="setMode('erase')" id="modeErase">Erase</button>
+      <div class="color-palette" id="colorPalette">
+        <div class="color-swatch active" data-color="#ffffff" style="background:#ffffff" onclick="setColor('#ffffff')" data-tip="White"></div>
+        <div class="color-swatch" data-color="#ff6b6b" style="background:#ff6b6b" onclick="setColor('#ff6b6b')" data-tip="Red"></div>
+        <div class="color-swatch" data-color="#ffd93d" style="background:#ffd93d" onclick="setColor('#ffd93d')" data-tip="Yellow"></div>
+        <div class="color-swatch" data-color="#6bff9e" style="background:#6bff9e" onclick="setColor('#6bff9e')" data-tip="Green"></div>
+        <div class="color-swatch" data-color="#6ba3ff" style="background:#6ba3ff" onclick="setColor('#6ba3ff')" data-tip="Blue"></div>
+        <div class="color-swatch" data-color="#c77dff" style="background:#c77dff" onclick="setColor('#c77dff')" data-tip="Purple"></div>
+        <label class="color-swatch custom" data-tip="Custom color">
+          <input type="color" id="customColor" value="#ff8a3d" oninput="setColor(this.value, true)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </label>
+      </div>
+      <div class="separator"></div>
+      <button class="icon-btn draw active" onclick="setMode('draw')" id="modeDraw" data-tip="Draw · D">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+        </svg>
+      </button>
+      <button class="icon-btn erase" onclick="setMode('erase')" id="modeErase" data-tip="Erase · E">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/>
+          <path d="M22 21H7"/>
+          <path d="m5 11 9 9"/>
+        </svg>
+      </button>
+      <div class="separator"></div>
+      <button class="icon-btn neutral" onclick="clearCanvas()" data-tip="Clear canvas">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18"/>
+          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+        </svg>
+      </button>
+      <button class="icon-btn save" onclick="saveIcon()" data-tip="Save icon · ⌘S">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+      </button>
+      <div class="separator"></div>
+      <button class="icon-btn neutral" onclick="zoomOut()" data-tip="Zoom out · ⌘−">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+      <button class="icon-btn neutral zoom-display" onclick="zoomReset()" data-tip="Reset zoom · ⌘0" id="zoomBtn">
+        <span id="zoomLabel">100%</span>
+      </button>
+      <button class="icon-btn neutral" onclick="zoomIn()" data-tip="Zoom in · ⌘+">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <line x1="12" y1="5" x2="12" y2="19"/>
+        </svg>
+      </button>
     </div>
+    </div> <!-- /.toolbar-dock -->
 
-    <div class="canvas-wrapper">
-      <canvas id="dot-canvas"></canvas>
-    </div>
+    <div class="canvas-column">
+      <div class="canvas-stack">
+        <div class="canvas-meta">
+          <div class="canvas-meta-name" id="canvasName" contenteditable="true" spellcheck="false">new-icon</div>
+          <div class="canvas-meta-size" id="canvasSize">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+            <span id="metaSizeText">12×12 · 24px</span>
+          </div>
+        </div>
 
-    <div class="canvas-info" id="canvasInfo">
-      Left click to draw · Right click to erase · Drag to paint
+        <div class="canvas-wrapper">
+          <canvas id="dot-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="canvas-info" id="canvasInfo">
+        Left click to draw · Right click to erase · Drag to paint
+      </div>
     </div>
 
   </div>
@@ -503,23 +1034,24 @@
   <div class="right-panel">
 
     <div class="settings-section">
-      <h3>Grid</h3>
-      <div class="setting-row">
-        <span class="setting-label">Size</span>
-      </div>
+      <h3>Grid Size</h3>
       <div class="grid-settings" id="gridSettings"></div>
-
-      <div class="setting-row">
-        <span class="setting-label">Cell size</span>
-        <span class="setting-value" id="cellSizeVal">28px</span>
-      </div>
-      <input type="range" id="cellSize" min="3" max="48" value="28" oninput="updateCellSize(this.value)">
 
       <div class="setting-row" style="margin-top:14px">
         <span class="setting-label">Safe padding</span>
         <span class="setting-value" id="padVal">2 dots</span>
       </div>
       <input type="range" id="padding" min="0" max="8" value="2" oninput="updatePadding(this.value)">
+    </div>
+
+    <div class="settings-section">
+      <h3>Icon Size</h3>
+      <div class="size-presets" id="sizePresets"></div>
+      <div class="setting-row" style="margin-top:12px">
+        <span class="setting-label">Output</span>
+        <span class="setting-value" id="outputSizeVal">24px</span>
+      </div>
+      <input type="range" id="outputSize" min="24" max="300" step="2" value="24" oninput="updateOutputSize(this.value)">
     </div>
 
     <div class="settings-section">
@@ -553,15 +1085,14 @@
 
     <div class="settings-section">
       <h3>Preview</h3>
-      <div class="preview-grid" id="previewGrid">
-        <!-- populated by JS -->
-      </div>
+      <div id="previewContainer"></div>
     </div>
 
     <div class="export-section">
       <h3>SVG Output</h3>
       <div class="svg-output" id="svgOutput"></div>
-      <button class="btn btn-secondary" style="width:100%;margin-bottom:8px" onclick="copySVG()">Copy SVG</button>
+      <button class="btn btn-secondary" style="width:100%;margin-bottom:6px" onclick="copySVG()">Copy SVG</button>
+      <button class="btn btn-secondary" style="width:100%;margin-bottom:8px" onclick="downloadSVG()">Download SVG</button>
       <div class="copy-feedback" id="copyFeedback"></div>
     </div>
 
@@ -573,17 +1104,25 @@
 let GRID = 12;
 let CELL = 28;
 let PADDING = 2; // safe padding in dots — area outside cannot be drawn
+let OUTPUT_SIZE = 24; // final SVG pixel size for export
 const GRID_OPTIONS = [8, 9, 10, 12, 16, 20, 24, 32, 40, 48, 64];
+const SIZE_PRESETS = [24, 32, 48, 64, 96, 128, 200, 300];
 
 let currentSize = 1; // 1=small, 2=medium, 3=large
+let currentColor = '#ffffff';
 let currentMode = 'draw';
 let isDrawing = false;
 let lastCell = null;
 
-// dots[row][col] = size (0 = empty, 1/2/3 = dot size)
+// dots[row][col] = {s: 1|2|3, c: '#hex'} or 0 (empty)
 let dots = [];
 
+function dotSize(d) { return d ? (typeof d === 'object' ? d.s : d) : 0; }
+function dotColor(d) { return d && typeof d === 'object' ? d.c : '#ffffff'; }
+function makeDot(s, c) { return { s, c: c || currentColor }; }
+
 let icons = JSON.parse(localStorage.getItem('dotGridIcons') || '[]');
+let libraryView = localStorage.getItem('libraryView') || 'grid';
 
 let lastImage = null;
 let THRESHOLD = 0.5;
@@ -593,7 +1132,34 @@ function initDots() {
   dots = Array.from({ length: GRID }, () => new Array(GRID).fill(0));
 }
 
+let ZOOM = 1; // 1 = auto-fit; >1 zoomed in, <1 zoomed out
+let userZoomed = false;
+
+function computeAutoCell() {
+  // Fit canvas into available .center area minus toolbar + meta + padding
+  const center = document.querySelector('.center');
+  if (!center) return CELL;
+  const rect = center.getBoundingClientRect();
+  const availW = Math.max(200, rect.width - 80);
+  const availH = Math.max(200, rect.height - 180);
+  const avail = Math.min(availW, availH, 560);
+  const cell = Math.floor(avail / GRID);
+  return Math.max(4, Math.min(60, cell));
+}
+
+function applyZoomedCell() {
+  const baseCell = computeAutoCell();
+  CELL = Math.max(2, Math.min(120, Math.round(baseCell * ZOOM)));
+  updateZoomLabel();
+}
+
+function updateZoomLabel() {
+  const el = document.getElementById('zoomLabel');
+  if (el) el.textContent = Math.round(ZOOM * 100) + '%';
+}
+
 function initCanvas() {
+  applyZoomedCell();
   const canvas = document.getElementById('dot-canvas');
   const total = GRID * CELL;
   canvas.width = total;
@@ -603,12 +1169,239 @@ function initCanvas() {
   render();
 }
 
+function zoomIn() {
+  userZoomed = true;
+  ZOOM = Math.min(4, ZOOM * 1.2);
+  initCanvas();
+}
+function zoomOut() {
+  userZoomed = true;
+  ZOOM = Math.max(0.25, ZOOM / 1.2);
+  initCanvas();
+}
+function zoomReset() {
+  userZoomed = false;
+  ZOOM = 1;
+  initCanvas();
+}
+
+// Recompute on window resize — only if user hasn't manually zoomed
+window.addEventListener('resize', () => {
+  initCanvas();
+});
+
 renderGridOptions();
+renderSizePresets();
 initDots();
 initCanvas();
-renderLibrary();
+setLibraryView(libraryView);
 updatePreview();
 updateSVGOutput();
+initDockableToolbar();
+initPanelResize();
+initCanvasMeta();
+updateMetaSize();
+
+function updateMetaSize() {
+  const el = document.getElementById('metaSizeText');
+  if (el) el.textContent = `${GRID}×${GRID} · ${OUTPUT_SIZE}px`;
+}
+
+function initCanvasMeta() {
+  const nameInput = document.getElementById('iconName');
+  const nameLabel = document.getElementById('canvasName');
+
+  // Init label from input
+  nameLabel.textContent = nameInput.value;
+
+  // Sync: label → input
+  nameLabel.addEventListener('input', () => {
+    const v = nameLabel.textContent.trim();
+    nameInput.value = v;
+    renderLibrary();
+  });
+
+  // Stop newlines in contenteditable
+  nameLabel.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); nameLabel.blur(); }
+  });
+
+  // Sync: input → label (in case it changes via load/new)
+  nameInput.addEventListener('input', () => {
+    if (document.activeElement !== nameLabel) nameLabel.textContent = nameInput.value;
+  });
+
+  // Also listen to programmatic value changes via MutationObserver fallback:
+  // We patch loadIcon / newIcon to call this via syncCanvasName() below
+}
+
+function syncCanvasName() {
+  const v = document.getElementById('iconName').value;
+  const label = document.getElementById('canvasName');
+  if (label && document.activeElement !== label) label.textContent = v;
+}
+
+// ─── PANEL RESIZE ────────────────────────────────────────────────────────────
+function initPanelResize() {
+  const resize = document.getElementById('panelResize');
+  const panel = document.querySelector('.left-panel');
+  if (!resize || !panel) return;
+
+  // Restore saved width
+  const savedWidth = parseInt(localStorage.getItem('libraryWidth') || '240');
+  panel.style.width = savedWidth + 'px';
+
+  let dragging = false;
+  let startX, startW;
+
+  resize.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    dragging = true;
+    resize.classList.add('active');
+    startX = e.clientX;
+    startW = panel.getBoundingClientRect().width;
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const newW = Math.max(180, Math.min(480, startW + dx));
+    panel.style.width = newW + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    resize.classList.remove('active');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    localStorage.setItem('libraryWidth', parseInt(panel.style.width));
+  });
+}
+
+// ─── DOCKABLE TOOLBAR ────────────────────────────────────────────────────────
+function initDockableToolbar() {
+  const dock = document.getElementById('toolbarDock');
+  const handle = document.getElementById('dragHandle');
+  const center = document.querySelector('.center');
+  const zones = {
+    top: document.getElementById('snapTop'),
+    bottom: document.getElementById('snapBottom'),
+    left: document.getElementById('snapLeft'),
+    right: document.getElementById('snapRight'),
+  };
+
+  // Restore last dock side
+  const savedSide = localStorage.getItem('toolbarDockSide') || 'top';
+  applyDockSide(savedSide);
+
+  function applyDockSide(side) {
+    ['top', 'bottom', 'left', 'right'].forEach(s => dock.classList.remove('dock-' + s));
+    ['top', 'bottom', 'left', 'right'].forEach(s => dock.classList.remove('tip-' + s));
+    dock.classList.add('dock-' + side);
+    // Tooltip on opposite side from where toolbar is docked
+    const tipMap = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
+    dock.classList.add('tip-' + tipMap[side]);
+    // Clear any inline transforms from dragging
+    dock.style.left = '';
+    dock.style.top = '';
+    dock.style.right = '';
+    dock.style.bottom = '';
+    dock.style.transform = '';
+    localStorage.setItem('toolbarDockSide', side);
+  }
+
+  let dragging = false;
+  let startX, startY, originX, originY;
+
+  handle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    dragging = true;
+    dock.classList.add('dragging');
+    Object.values(zones).forEach(z => z.classList.add('visible'));
+
+    const rect = dock.getBoundingClientRect();
+    const centerRect = center.getBoundingClientRect();
+    originX = rect.left - centerRect.left;
+    originY = rect.top - centerRect.top;
+    startX = e.clientX;
+    startY = e.clientY;
+
+    // Switch to absolute pixel positioning while dragging
+    dock.style.left = originX + 'px';
+    dock.style.top = originY + 'px';
+    dock.style.right = 'auto';
+    dock.style.bottom = 'auto';
+    dock.style.transform = 'none';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    dock.style.left = (originX + dx) + 'px';
+    dock.style.top = (originY + dy) + 'px';
+
+    // Highlight nearest snap zone
+    const target = detectSnapSide(e.clientX, e.clientY);
+    Object.entries(zones).forEach(([s, el]) => el.classList.toggle('target', s === target));
+  });
+
+  document.addEventListener('mouseup', (e) => {
+    if (!dragging) return;
+    dragging = false;
+    dock.classList.remove('dragging');
+    Object.values(zones).forEach(z => { z.classList.remove('visible'); z.classList.remove('target'); });
+
+    const side = detectSnapSide(e.clientX, e.clientY);
+    applyDockSide(side);
+  });
+
+  function detectSnapSide(clientX, clientY) {
+    const r = center.getBoundingClientRect();
+    const relX = clientX - r.left;
+    const relY = clientY - r.top;
+    const fromLeft = relX;
+    const fromRight = r.width - relX;
+    const fromTop = relY;
+    const fromBottom = r.height - relY;
+    const min = Math.min(fromLeft, fromRight, fromTop, fromBottom);
+    if (min === fromTop) return 'top';
+    if (min === fromBottom) return 'bottom';
+    if (min === fromLeft) return 'left';
+    return 'right';
+  }
+}
+
+function renderSizePresets() {
+  const container = document.getElementById('sizePresets');
+  if (!container) return;
+  container.innerHTML = SIZE_PRESETS.map(s =>
+    `<div class="size-preset${s === OUTPUT_SIZE ? ' active' : ''}" onclick="setOutputSize(${s})">${s}px</div>`
+  ).join('');
+}
+
+function setOutputSize(px) {
+  OUTPUT_SIZE = px;
+  document.getElementById('outputSize').value = px;
+  document.getElementById('outputSizeVal').textContent = px + 'px';
+  renderSizePresets();
+  updateSVGOutput();
+  updateMetaSize();
+}
+
+function updateOutputSize(v) {
+  OUTPUT_SIZE = parseInt(v);
+  document.getElementById('outputSizeVal').textContent = OUTPUT_SIZE + 'px';
+  // Update active state on presets
+  document.querySelectorAll('.size-preset').forEach(el => {
+    el.classList.toggle('active', parseInt(el.textContent) === OUTPUT_SIZE);
+  });
+  updateSVGOutput();
+  updateMetaSize();
+}
 
 function renderGridOptions() {
   const container = document.getElementById('gridSettings');
@@ -664,11 +1457,12 @@ function render() {
       ctx.fill();
 
       // Filled dot — only if in safe zone
-      if (dots[r][c] > 0 && safe) {
-        const radius = getDotRadius(dots[r][c]);
+      const d = dots[r][c];
+      if (d && safe) {
+        const radius = getDotRadius(dotSize(d));
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = dotColor(d);
         ctx.fill();
       }
     }
@@ -698,7 +1492,7 @@ function applyToCell(cell) {
   if (currentMode === 'erase') {
     dots[cell.row][cell.col] = 0;
   } else {
-    dots[cell.row][cell.col] = currentSize;
+    dots[cell.row][cell.col] = makeDot(currentSize, currentColor);
   }
   render();
   updatePreview();
@@ -735,14 +1529,54 @@ function setSize(s) {
   document.getElementById('sz' + s).classList.add('active');
 }
 
+function setColor(color, isCustom) {
+  currentColor = color;
+  document.querySelectorAll('.color-swatch').forEach(el => {
+    if (el.classList.contains('custom')) return;
+    el.classList.toggle('active', el.dataset.color === color);
+  });
+  // If a preset matches, deactivate custom visual indicator (it doesn't have active state anyway)
+}
+
 function setMode(m) {
   currentMode = m;
   document.getElementById('modeDraw').classList.toggle('active', m === 'draw');
   document.getElementById('modeErase').classList.toggle('active', m === 'erase');
 }
 
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
+
+  // Zoom shortcuts (Cmd/Ctrl + +, -, 0)
+  if (e.metaKey || e.ctrlKey) {
+    if (e.key === '=' || e.key === '+') { e.preventDefault(); zoomIn(); return; }
+    if (e.key === '-' || e.key === '_') { e.preventDefault(); zoomOut(); return; }
+    if (e.key === '0') { e.preventDefault(); zoomReset(); return; }
+    if (e.key === 's') { e.preventDefault(); saveIcon(); return; }
+    return;
+  }
+
+  if (e.key === 'd' || e.key === 'D') setMode('draw');
+  else if (e.key === 'e' || e.key === 'E') setMode('erase');
+  else if (e.key === '1') setSize(1);
+  else if (e.key === '2') setSize(2);
+  else if (e.key === '3') setSize(3);
+});
+
+// Wheel zoom (Cmd/Ctrl + scroll)
+document.querySelector('.canvas-wrapper')?.addEventListener('wheel', (e) => {
+  if (e.metaKey || e.ctrlKey) {
+    e.preventDefault();
+    if (e.deltaY < 0) zoomIn(); else zoomOut();
+  }
+}, { passive: false });
+
 // ─── GRID SETTINGS ───────────────────────────────────────────────────────────
 function setGrid(n) {
+  const oldGrid = GRID;
+  const oldDots = dots;
+
   GRID = n;
   if (PADDING * 2 >= GRID) PADDING = Math.max(0, Math.floor(GRID / 2) - 1);
   document.getElementById('padding').value = PADDING;
@@ -751,16 +1585,27 @@ function setGrid(n) {
     const el = document.getElementById('grid' + g);
     if (el) el.classList.toggle('active', g === n);
   });
-  initDots();
+
+  // Re-anchor existing dots into the new grid (centered)
+  dots = Array.from({ length: GRID }, () => new Array(GRID).fill(0));
+  if (oldDots && oldDots.length) {
+    const offset = Math.floor((GRID - oldGrid) / 2);
+    for (let r = 0; r < oldGrid; r++) {
+      for (let c = 0; c < oldGrid; c++) {
+        const newR = r + offset;
+        const newC = c + offset;
+        if (newR >= 0 && newR < GRID && newC >= 0 && newC < GRID) {
+          // Only keep dots that fall within the new safe zone
+          if (inSafeZone(newR, newC)) dots[newR][newC] = oldDots[r][c];
+        }
+      }
+    }
+  }
+
   initCanvas();
   updatePreview();
   updateSVGOutput();
-}
-
-function updateCellSize(v) {
-  CELL = parseInt(v);
-  document.getElementById('cellSizeVal').textContent = v + 'px';
-  initCanvas();
+  updateMetaSize();
 }
 
 function updatePadding(v) {
@@ -782,29 +1627,45 @@ function updatePadding(v) {
 }
 
 // ─── SVG GENERATION ──────────────────────────────────────────────────────────
-function generateSVG(dotsData, gridSize, outputSize = 24) {
+function generateSVG(dotsData, gridSize, outputSize = OUTPUT_SIZE) {
   const cellSize = outputSize / gridSize;
   let circles = '';
+  let hasColor = false;
 
   for (let r = 0; r < gridSize; r++) {
     for (let c = 0; c < gridSize; c++) {
-      if (dotsData[r][c] > 0) {
-        const cx = (c + 0.5) * cellSize;
-        const cy = (r + 0.5) * cellSize;
-        const base = cellSize / 2;
-        const radiusFractions = [0, 0.35, 0.58, 0.82];
-        const radius = base * radiusFractions[dotsData[r][c]];
-        circles += `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${radius.toFixed(2)}"/>`;
-      }
+      const d = dotsData[r][c];
+      if (!d) continue;
+      const s = dotSize(d);
+      const col = dotColor(d);
+      if (col !== '#ffffff') hasColor = true;
+      const cx = (c + 0.5) * cellSize;
+      const cy = (r + 0.5) * cellSize;
+      const base = cellSize / 2;
+      const radiusFractions = [0, 0.35, 0.58, 0.82];
+      const radius = base * radiusFractions[s];
+      const fill = (col === '#ffffff') ? '' : ` fill="${col}"`;
+      circles += `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${radius.toFixed(2)}"${fill}/>`;
     }
   }
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${outputSize} ${outputSize}" fill="currentColor">${circles}</svg>`;
+  const rootFill = hasColor ? 'currentColor' : 'currentColor';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${outputSize} ${outputSize}" fill="${rootFill}">${circles}</svg>`;
 }
 
 function updateSVGOutput() {
   const svg = generateSVG(dots, GRID);
   document.getElementById('svgOutput').textContent = svg;
+}
+
+function downloadSVG() {
+  const svg = generateSVG(dots, GRID);
+  const name = (document.getElementById('iconName').value.trim() || 'icon') + '.svg';
+  downloadFile(name, svg, 'image/svg+xml');
+  const fb = document.getElementById('copyFeedback');
+  fb.textContent = `Downloaded ${name}`;
+  fb.style.opacity = 1;
+  setTimeout(() => { fb.style.opacity = 0; }, 2000);
 }
 
 function copySVG() {
@@ -819,17 +1680,26 @@ function copySVG() {
 
 // ─── PREVIEW ─────────────────────────────────────────────────────────────────
 function updatePreview() {
-  const sizes = [16, 24, 48];
-  const container = document.getElementById('previewGrid');
-  container.innerHTML = sizes.map(s => {
-    const svg = generateSVG(dots, GRID, s);
-    return `<div class="preview-size">
-      <div style="background:#1a1a1a;border-radius:${s/8}px;padding:${s/8}px;display:flex;align-items:center;justify-content:center;">
-        ${svg.replace('fill="currentColor"', 'fill="#ffffff"')}
-      </div>
-      <span>${s}px</span>
+  const sizes = [16, 24, 32, 48, 64];
+  const container = document.getElementById('previewContainer');
+  if (!container) return;
+
+  const buildRow = (theme) => {
+    const fill = theme === 'dark' ? '#ffffff' : '#0a0a0a';
+    return `<div class="preview-row ${theme}">
+      ${sizes.map(s => {
+        const svg = generateSVG(dots, GRID, s)
+          .replace('fill="currentColor"', `fill="${fill}"`)
+          .replace('<svg ', `<svg width="${s}" height="${s}" `);
+        return `<div class="preview-cell">
+          <div class="icon-wrap">${svg}</div>
+          <span class="size-label">${s}</span>
+        </div>`;
+      }).join('')}
     </div>`;
-  }).join('');
+  };
+
+  container.innerHTML = buildRow('dark') + buildRow('light');
 }
 
 // ─── LIBRARY ─────────────────────────────────────────────────────────────────
@@ -854,6 +1724,9 @@ function saveIcon() {
   renderLibrary();
 }
 
+// Re-highlight library when user edits the name field
+document.getElementById('iconName').addEventListener('input', () => renderLibrary());
+
 function loadIcon(idx) {
   const icon = icons[idx];
   GRID = icon.grid;
@@ -868,6 +1741,8 @@ function loadIcon(idx) {
   document.getElementById('padVal').textContent = PADDING + ' dot' + (PADDING === 1 ? '' : 's');
 
   document.getElementById('iconName').value = icon.name;
+  syncCanvasName();
+  updateMetaSize();
   initCanvas();
   render();
   updatePreview();
@@ -881,19 +1756,50 @@ function deleteIcon(idx, e) {
   renderLibrary();
 }
 
+function setLibraryView(view) {
+  libraryView = view;
+  localStorage.setItem('libraryView', view);
+  const list = document.getElementById('iconList');
+  list.classList.toggle('view-grid', view === 'grid');
+  list.classList.toggle('view-list', view === 'list');
+  document.getElementById('viewGridBtn').classList.toggle('active', view === 'grid');
+  document.getElementById('viewListBtn').classList.toggle('active', view === 'list');
+  renderLibrary();
+}
+
+function downloadIconFile(idx, e) {
+  e.stopPropagation();
+  const icon = icons[idx];
+  const svg = generateSVG(icon.dots, icon.grid);
+  downloadFile(icon.name + '.svg', svg, 'image/svg+xml');
+}
+
 function renderLibrary() {
   const list = document.getElementById('iconList');
+  // Apply current view classes
+  list.classList.toggle('view-grid', libraryView === 'grid');
+  list.classList.toggle('view-list', libraryView === 'list');
+
   if (icons.length === 0) {
-    list.innerHTML = '<div style="padding:24px 16px;text-align:center;color:#333;font-size:12px;">No icons yet.<br>Draw and save to start.</div>';
+    list.innerHTML = `<div style="padding:24px 16px;text-align:center;color:#333;font-size:12px;${libraryView === 'grid' ? 'grid-column:1/-1;' : ''}">No icons yet.<br>Draw and save to start.</div>`;
     return;
   }
 
+  const activeName = document.getElementById('iconName').value;
   list.innerHTML = icons.map((icon, idx) => {
     const miniSVG = generateSVG(icon.dots, icon.grid, 24).replace('fill="currentColor"', 'fill="#ffffff"');
-    return `<div class="icon-item" onclick="loadIcon(${idx})">
+    const active = icon.name === activeName ? ' active' : '';
+    return `<div class="icon-item${active}" onclick="loadIcon(${idx})">
       <div class="preview">${miniSVG}</div>
       <span class="name">${icon.name}</span>
-      <button class="del-btn" onclick="deleteIcon(${idx}, event)">×</button>
+      <div class="quick-actions">
+        <button onclick="downloadIconFile(${idx}, event)" data-tip="Download">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button class="delete" onclick="deleteIcon(${idx}, event)" data-tip="Delete">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -944,6 +1850,35 @@ function downloadFile(filename, content, type) {
   URL.revokeObjectURL(url);
 }
 
+function newIcon() {
+  // Generate unique name
+  let base = 'icon';
+  let n = 1;
+  const existing = new Set(icons.map(i => i.name));
+  while (existing.has(`${base}-${n}`)) n++;
+  const newName = `${base}-${n}`;
+
+  // Reset state
+  initDots();
+  lastImage = null;
+  document.getElementById('iconName').value = newName;
+  syncCanvasName();
+
+  // Clear dropzone preview
+  const preview = document.getElementById('dzPreview');
+  if (preview) { preview.classList.remove('has-image'); preview.innerHTML = ''; }
+
+  // Deselect from library
+  document.querySelectorAll('.icon-item.active').forEach(el => el.classList.remove('active'));
+
+  render();
+  updatePreview();
+  updateSVGOutput();
+
+  // Focus name for quick rename
+  document.getElementById('iconName').select();
+}
+
 function resetLibrary() {
   if (icons.length === 0) return;
   if (!confirm(`Xoá hết ${icons.length} icon trong library? Hành động này không thể hoàn tác.`)) return;
@@ -968,6 +1903,7 @@ function loadImageFile(file) {
       lastImage = img;
       const cleanName = (file.name || 'pasted-icon').replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
       document.getElementById('iconName').value = cleanName;
+      syncCanvasName();
       updateDropPreview(e.target.result, file.name || 'Pasted image');
       traceImage(img);
     };
@@ -1101,7 +2037,7 @@ function traceImage(img) {
       if (size > 0) {
         const gridR = PADDING + r;
         const gridC = PADDING + c;
-        dots[gridR][gridC] = size;
+        dots[gridR][gridC] = makeDot(size, currentColor);
       }
     }
   }
