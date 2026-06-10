@@ -86,6 +86,53 @@
     position: relative;
   }
 
+  .library-footer {
+    position: relative;
+    padding: 10px;
+    border-top: 1px solid #1e1e1e;
+    flex-shrink: 0;
+  }
+  .export-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+  }
+  .export-menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 10px;
+    right: 10px;
+    background: #1c1c1c;
+    border: 1px solid #2e2e2e;
+    border-radius: 10px;
+    padding: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    display: none;
+    z-index: 60;
+  }
+  .export-menu.open { display: block; }
+  .export-menu button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    padding: 8px 10px;
+    cursor: pointer;
+    color: #ccc;
+    text-align: left;
+    transition: background 0.1s;
+  }
+  .export-menu button:hover { background: #2a2a2a; color: #fff; }
+  .export-menu button svg { flex-shrink: 0; color: #888; }
+  .export-menu button:hover svg { color: #fff; }
+  .export-menu .title { font-size: 12px; font-weight: 500; }
+  .export-menu .sub { font-size: 10px; color: #666; margin-top: 1px; }
+
   .panel-resize {
     position: absolute;
     top: 0;
@@ -781,6 +828,29 @@
   .select-dropdown:focus { border-color: #555; }
   .select-dropdown option { background: #1a1a1a; color: #eee; padding: 8px; }
 
+  .grid-color-row {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+  .grid-color-swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.1s, border-color 0.1s;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .grid-color-swatch:hover { transform: scale(1.15); }
+  .grid-color-swatch.active { border-color: #fff; }
+  .grid-color-swatch.custom-grid {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ffd93d 33%, #6bff9e 66%, #6ba3ff 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .grid-color-swatch.custom-grid input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
   .grid-settings {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -918,7 +988,6 @@
 
   <div class="spacer"></div>
   <button class="btn btn-danger" onclick="resetLibrary()">Reset All</button>
-  <button class="btn btn-secondary" onclick="exportLibrary()">Export Library</button>
 </header>
 
 <div class="main">
@@ -943,6 +1012,29 @@
     <div class="icon-list view-grid" id="iconList">
       <div style="padding:24px 16px;text-align:center;color:#333;font-size:12px;grid-column:1/-1;">
         No icons yet.<br>Draw and save to start.
+      </div>
+    </div>
+    <div class="library-footer">
+      <button class="btn btn-secondary export-btn" id="exportBtn" onclick="toggleExportMenu(event)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Library
+        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style="margin-left:auto"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="export-menu" id="exportMenu">
+        <button onclick="exportZip()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+          <div>
+            <div class="title">Export to ZIP</div>
+            <div class="sub">All icons as .svg files</div>
+          </div>
+        </button>
+        <button onclick="exportJson()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div>
+            <div class="title">Export to JSON</div>
+            <div class="sub">For Nucleo &amp; icon tools</div>
+          </div>
+        </button>
       </div>
     </div>
     <div class="panel-resize" id="panelResize"></div>
@@ -1086,6 +1178,17 @@
         <span class="setting-value" id="padVal">2 dots</span>
       </div>
       <input type="range" id="padding" min="0" max="8" value="2" oninput="updatePadding(this.value)">
+
+      <div class="setting-row" style="margin-top:14px">
+        <span class="setting-label">Grid color</span>
+      </div>
+      <div class="grid-color-row" id="gridColorRow" style="margin-top:6px"></div>
+
+      <div class="setting-row" style="margin-top:10px">
+        <span class="setting-label">Grid opacity</span>
+        <span class="setting-value" id="gridOpacityVal">100%</span>
+      </div>
+      <input type="range" id="gridOpacity" min="0" max="100" value="100" oninput="updateGridOpacity(this.value)">
     </div>
 
     <div class="settings-section">
@@ -1138,7 +1241,8 @@
       <h3>SVG Output</h3>
       <div class="svg-output" id="svgOutput"></div>
       <button class="btn btn-secondary" style="width:100%;margin-bottom:6px" onclick="copySVG()">Copy SVG</button>
-      <button class="btn btn-secondary" style="width:100%;margin-bottom:8px" onclick="downloadSVG()">Download SVG</button>
+      <button class="btn btn-secondary" style="width:100%;margin-bottom:6px" onclick="downloadSVG()">Download SVG</button>
+      <button class="btn btn-secondary" style="width:100%;margin-bottom:8px" onclick="downloadPNG()">Download PNG</button>
       <div class="copy-feedback" id="copyFeedback"></div>
     </div>
 
@@ -1153,6 +1257,10 @@ let PADDING = 2; // safe padding in dots — area outside cannot be drawn
 let OUTPUT_SIZE = 24; // final SVG pixel size for export
 const GRID_OPTIONS = [8, 9, 10, 12, 16, 20, 24, 32, 40, 48, 64];
 const SIZE_PRESETS = [24, 32, 48, 64, 96, 128, 200, 300];
+
+let GRID_COLOR = localStorage.getItem('gridColor') || '#262626';
+let GRID_OPACITY = parseFloat(localStorage.getItem('gridOpacity') ?? '1');
+const GRID_COLOR_PRESETS = ['#262626', '#3a3a3a', '#4a4a4a', '#5a4530', '#304a45', '#30354a', '#4a3045'];
 
 const BRUSH_COUNT = 3;
 let currentSize = 1;
@@ -1322,6 +1430,9 @@ window.addEventListener('resize', () => {
 renderGridOptions();
 renderSizePresets();
 renderTraceLevels();
+renderGridColorRow();
+document.getElementById('gridOpacity').value = Math.round(GRID_OPACITY * 100);
+document.getElementById('gridOpacityVal').textContent = Math.round(GRID_OPACITY * 100) + '%';
 initDots();
 initCanvas();
 resetHistory();
@@ -1561,6 +1672,32 @@ function updateOutputSize(v) {
   updateMetaSize();
 }
 
+function renderGridColorRow() {
+  const row = document.getElementById('gridColorRow');
+  if (!row) return;
+  const isCustom = !GRID_COLOR_PRESETS.includes(GRID_COLOR);
+  row.innerHTML = GRID_COLOR_PRESETS.map(c =>
+    `<div class="grid-color-swatch${c === GRID_COLOR ? ' active' : ''}" style="background:${c}" onclick="setGridColor('${c}')" data-tip="${c}"></div>`
+  ).join('') + `
+    <label class="grid-color-swatch custom-grid${isCustom ? ' active' : ''}" data-tip="Custom" ${isCustom ? `style="background:${GRID_COLOR}"` : ''}>
+      <input type="color" value="${isCustom ? GRID_COLOR : '#888888'}" oninput="setGridColor(this.value)">
+    </label>`;
+}
+
+function setGridColor(c) {
+  GRID_COLOR = c;
+  localStorage.setItem('gridColor', c);
+  renderGridColorRow();
+  render();
+}
+
+function updateGridOpacity(v) {
+  GRID_OPACITY = parseInt(v) / 100;
+  localStorage.setItem('gridOpacity', GRID_OPACITY);
+  document.getElementById('gridOpacityVal').textContent = v + '%';
+  render();
+}
+
 function renderGridOptions() {
   const select = document.getElementById('gridSelect');
   if (!select) return;
@@ -1639,8 +1776,11 @@ function render() {
       ctx.beginPath();
       const ghostR = Math.max(0.5, getDotRadius(1) * 0.5);
       ctx.arc(cx, cy, ghostR, 0, Math.PI * 2);
-      ctx.fillStyle = safe ? '#262626' : '#171717';
+      ctx.save();
+      ctx.globalAlpha = GRID_OPACITY * (safe ? 1 : 0.45);
+      ctx.fillStyle = GRID_COLOR;
       ctx.fill();
+      ctx.restore();
 
       // Filled dot — only if in safe zone
       const d = renderDots[r][c];
@@ -2094,6 +2234,47 @@ function downloadSVG() {
   setTimeout(() => { fb.style.opacity = 0; }, 2000);
 }
 
+function svgToPngBlob(svgString, size) {
+  return new Promise((resolve, reject) => {
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      const cv = document.createElement('canvas');
+      cv.width = size;
+      cv.height = size;
+      cv.getContext('2d').drawImage(img, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      cv.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('SVG load failed')); };
+    img.src = url;
+  });
+}
+
+async function downloadPNG() {
+  // currentColor doesn't resolve inside <img>, so bake in white for mono dots
+  const svg = generateSVG(dots, GRID)
+    .replace('fill="currentColor"', 'fill="#ffffff"')
+    .replace('<svg ', `<svg width="${OUTPUT_SIZE}" height="${OUTPUT_SIZE}" `);
+  const fb = document.getElementById('copyFeedback');
+  try {
+    const blob = await svgToPngBlob(svg, OUTPUT_SIZE);
+    const name = (document.getElementById('iconName').value.trim() || 'icon') + '.png';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(url);
+    fb.textContent = `Downloaded ${name}`;
+  } catch (err) {
+    fb.textContent = 'PNG export failed';
+  }
+  fb.style.opacity = 1;
+  setTimeout(() => { fb.style.opacity = 0; }, 2000);
+}
+
 function copySVG() {
   const svg = generateSVG(dots, GRID);
   navigator.clipboard.writeText(svg).then(() => {
@@ -2207,6 +2388,129 @@ function renderLibrary() {
       </div>
     </div>`;
   }).join('');
+}
+
+// ─── EXPORT MENU ─────────────────────────────────────────────────────────────
+function toggleExportMenu(e) {
+  e.stopPropagation();
+  document.getElementById('exportMenu').classList.toggle('open');
+}
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('exportMenu');
+  if (menu && !e.target.closest('.library-footer')) menu.classList.remove('open');
+});
+
+// Minimal ZIP writer (stored, no compression)
+function buildZip(files) { // files: [{name, content:string}]
+  const enc = new TextEncoder();
+  const CRC_TABLE = (() => {
+    const t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+  const crc32 = (buf) => {
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  };
+
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+
+  for (const f of files) {
+    const nameBytes = enc.encode(f.name);
+    const data = enc.encode(f.content);
+    const crc = crc32(data);
+
+    const local = new DataView(new ArrayBuffer(30));
+    local.setUint32(0, 0x04034b50, true);
+    local.setUint16(4, 20, true);          // version needed
+    local.setUint16(6, 0x0800, true);      // UTF-8 flag
+    local.setUint16(8, 0, true);           // method: store
+    local.setUint16(10, 0, true);          // time
+    local.setUint16(12, 0, true);          // date
+    local.setUint32(14, crc, true);
+    local.setUint32(18, data.length, true);
+    local.setUint32(22, data.length, true);
+    local.setUint16(26, nameBytes.length, true);
+    local.setUint16(28, 0, true);
+
+    localParts.push(new Uint8Array(local.buffer), nameBytes, data);
+
+    const central = new DataView(new ArrayBuffer(46));
+    central.setUint32(0, 0x02014b50, true);
+    central.setUint16(4, 20, true);
+    central.setUint16(6, 20, true);
+    central.setUint16(8, 0x0800, true);
+    central.setUint16(10, 0, true);
+    central.setUint16(12, 0, true);
+    central.setUint16(14, 0, true);
+    central.setUint32(16, crc, true);
+    central.setUint32(20, data.length, true);
+    central.setUint32(24, data.length, true);
+    central.setUint16(28, nameBytes.length, true);
+    central.setUint32(42, offset, true);
+    centralParts.push(new Uint8Array(central.buffer), nameBytes);
+
+    offset += 30 + nameBytes.length + data.length;
+  }
+
+  const centralSize = centralParts.reduce((s, p) => s + p.length, 0);
+  const eocd = new DataView(new ArrayBuffer(22));
+  eocd.setUint32(0, 0x06054b50, true);
+  eocd.setUint16(8, files.length, true);
+  eocd.setUint16(10, files.length, true);
+  eocd.setUint32(12, centralSize, true);
+  eocd.setUint32(16, offset, true);
+
+  return new Blob([...localParts, ...centralParts, new Uint8Array(eocd.buffer)], { type: 'application/zip' });
+}
+
+function exportZip() {
+  document.getElementById('exportMenu').classList.remove('open');
+  if (icons.length === 0) { alert('Library is empty — save some icons first.'); return; }
+
+  const files = icons.map(icon => ({
+    name: icon.name + '.svg',
+    content: generateSVG(icon.dots, icon.grid)
+  }));
+
+  const blob = buildZip(files);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'dot-grid-icons.zip';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportJson() {
+  document.getElementById('exportMenu').classList.remove('open');
+  if (icons.length === 0) { alert('Library is empty — save some icons first.'); return; }
+
+  // Generic icon-set JSON compatible with Nucleo & similar tools:
+  // each icon carries name, tags, grid size and raw SVG content
+  const payload = {
+    name: 'dot-grid-icons',
+    version: '1.0',
+    generator: 'Dot Grid Icon Builder',
+    iconSize: OUTPUT_SIZE,
+    icons: icons.map(icon => ({
+      name: icon.name,
+      tags: icon.name.split('-'),
+      grid: icon.grid,
+      width: OUTPUT_SIZE,
+      height: OUTPUT_SIZE,
+      svg: generateSVG(icon.dots, icon.grid)
+    }))
+  };
+
+  downloadFile('dot-grid-icons.json', JSON.stringify(payload, null, 2), 'application/json');
 }
 
 function exportLibrary() {
