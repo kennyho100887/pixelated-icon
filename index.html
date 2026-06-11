@@ -828,6 +828,31 @@
   .select-dropdown:focus { border-color: #555; }
   .select-dropdown option { background: #1a1a1a; color: #eee; padding: 8px; }
 
+  .shape-toggle {
+    display: flex;
+    background: #161616;
+    border: 1px solid #262626;
+    border-radius: 6px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .shape-toggle button {
+    background: transparent;
+    border: none;
+    color: #555;
+    width: 26px;
+    height: 22px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.12s;
+  }
+  .shape-toggle button:hover { color: #ccc; }
+  .shape-toggle button.active { background: #2a2a2a; color: #fff; }
+
   .grid-color-row {
     display: flex;
     gap: 5px;
@@ -1174,6 +1199,18 @@
       <select class="select-dropdown" id="gridSelect" onchange="setGrid(parseInt(this.value))"></select>
 
       <div class="setting-row" style="margin-top:14px">
+        <span class="setting-label">Artboard</span>
+        <div class="shape-toggle">
+          <button id="shapeSquare" class="active" onclick="setArtboardShape('square')" data-tip="Square artboard">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+          </button>
+          <button id="shapeCircle" onclick="setArtboardShape('circle')" data-tip="Circle artboard">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="setting-row" style="margin-top:14px">
         <span class="setting-label">Safe padding</span>
         <span class="setting-value" id="padVal">2 dots</span>
       </div>
@@ -1268,6 +1305,7 @@ const SIZE_PRESETS = [24, 32, 48, 64, 96, 128, 200, 300];
 let GRID_COLOR = localStorage.getItem('gridColor') || '#262626';
 let GRID_OPACITY = parseFloat(localStorage.getItem('gridOpacity') ?? '1');
 let EXPORT_GRID = localStorage.getItem('exportGrid') === 'true';
+let ARTBOARD_SHAPE = localStorage.getItem('artboardShape') || 'square';
 const GRID_COLOR_PRESETS = ['#262626', '#3a3a3a', '#4a4a4a', '#5a4530', '#304a45', '#30354a', '#4a3045'];
 
 const BRUSH_COUNT = 3;
@@ -1313,6 +1351,7 @@ function snapshot() {
   return {
     grid: GRID,
     padding: PADDING,
+    shape: ARTBOARD_SHAPE,
     dots: dots.map(row => row.map(d => (d && typeof d === 'object') ? { s: d.s, c: d.c } : d))
   };
 }
@@ -1329,6 +1368,11 @@ function pushHistory() {
 function applySnapshot(snap) {
   GRID = snap.grid;
   PADDING = snap.padding;
+  if (snap.shape) {
+    ARTBOARD_SHAPE = snap.shape;
+    document.getElementById('shapeSquare').classList.toggle('active', snap.shape === 'square');
+    document.getElementById('shapeCircle').classList.toggle('active', snap.shape === 'circle');
+  }
   dots = snap.dots.map(row => row.map(d => (d && typeof d === 'object') ? { s: d.s, c: d.c } : d));
 
   // Sync UI to restored state
@@ -1442,6 +1486,8 @@ renderGridColorRow();
 document.getElementById('gridOpacity').value = Math.round(GRID_OPACITY * 100);
 document.getElementById('gridOpacityVal').textContent = Math.round(GRID_OPACITY * 100) + '%';
 document.getElementById('exportGridToggle').checked = EXPORT_GRID;
+document.getElementById('shapeSquare').classList.toggle('active', ARTBOARD_SHAPE === 'square');
+document.getElementById('shapeCircle').classList.toggle('active', ARTBOARD_SHAPE === 'circle');
 initDots();
 initCanvas();
 resetHistory();
@@ -1717,7 +1763,31 @@ function renderGridOptions() {
 }
 
 function inSafeZone(r, c) {
+  if (ARTBOARD_SHAPE === 'circle') {
+    const center = GRID / 2;
+    const radius = GRID / 2 - PADDING;
+    const dx = (c + 0.5) - center;
+    const dy = (r + 0.5) - center;
+    return Math.sqrt(dx * dx + dy * dy) <= radius + 0.01;
+  }
   return r >= PADDING && r < GRID - PADDING && c >= PADDING && c < GRID - PADDING;
+}
+
+function setArtboardShape(shape) {
+  ARTBOARD_SHAPE = shape;
+  localStorage.setItem('artboardShape', shape);
+  document.getElementById('shapeSquare').classList.toggle('active', shape === 'square');
+  document.getElementById('shapeCircle').classList.toggle('active', shape === 'circle');
+  // Clear dots now outside the safe zone
+  let changed = false;
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      if (dots[r][c] && !inSafeZone(r, c)) { dots[r][c] = 0; changed = true; }
+    }
+  }
+  render();
+  updateSVGOutput();
+  if (changed) { updatePreview(); renderLibrary(); pushHistory(); }
 }
 
 // ─── RENDER ──────────────────────────────────────────────────────────────────
@@ -1734,7 +1804,21 @@ function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Draw safe zone background
-  if (PADDING > 0) {
+  if (ARTBOARD_SHAPE === 'circle') {
+    if (PADDING > 0) {
+      const center = (GRID * CELL) / 2;
+      const radius = (GRID / 2 - PADDING) * CELL;
+      ctx.beginPath();
+      ctx.arc(center, center, radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.015)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  } else if (PADDING > 0) {
     const safeStart = PADDING * CELL;
     const safeSize = (GRID - PADDING * 2) * CELL;
     ctx.fillStyle = 'rgba(255,255,255,0.015)';
@@ -1775,11 +1859,19 @@ function render() {
     }
   }
 
+  const gridCenter = GRID / 2;
   for (let r = 0; r < GRID; r++) {
     for (let c = 0; c < GRID; c++) {
       const cx = c * CELL + CELL / 2;
       const cy = r * CELL + CELL / 2;
       const safe = inSafeZone(r, c);
+
+      // Circle grid: corner dots outside the circle are removed entirely
+      if (ARTBOARD_SHAPE === 'circle') {
+        const dx = (c + 0.5) - gridCenter;
+        const dy = (r + 0.5) - gridCenter;
+        if (Math.sqrt(dx * dx + dy * dy) > gridCenter) continue;
+      }
 
       // Ghost dot (grid indicator) — dimmer in padding area
       ctx.beginPath();
@@ -2210,9 +2302,14 @@ function generateSVG(dotsData, gridSize, outputSize = OUTPUT_SIZE, includeGrid =
   // Grid background (ghost dots) — drawn first so real dots layer on top
   if (includeGrid) {
     const ghostR = (cellSize / 2) * getBrushFractions()[1] * 0.5;
+    const center = gridSize / 2;
     let ghosts = '';
     for (let r = 0; r < gridSize; r++) {
       for (let c = 0; c < gridSize; c++) {
+        if (ARTBOARD_SHAPE === 'circle') {
+          const dx = (c + 0.5) - center, dy = (r + 0.5) - center;
+          if (Math.sqrt(dx * dx + dy * dy) > center) continue;
+        }
         const cx = (c + 0.5) * cellSize;
         const cy = (r + 0.5) * cellSize;
         ghosts += `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${ghostR.toFixed(2)}"/>`;
@@ -2326,6 +2423,7 @@ function saveIcon() {
     name,
     grid: GRID,
     padding: PADDING,
+    shape: ARTBOARD_SHAPE,
     dots: dots.map(r => [...r]),
     updatedAt: Date.now()
   };
@@ -2347,6 +2445,9 @@ function loadIcon(idx) {
   const icon = icons[idx];
   GRID = icon.grid;
   PADDING = icon.padding ?? 0;
+  ARTBOARD_SHAPE = icon.shape || 'square';
+  document.getElementById('shapeSquare').classList.toggle('active', ARTBOARD_SHAPE === 'square');
+  document.getElementById('shapeCircle').classList.toggle('active', ARTBOARD_SHAPE === 'circle');
   dots = icon.dots.map(r => [...r]);
 
   const gridSelectEl = document.getElementById('gridSelect');
@@ -2786,7 +2887,7 @@ function traceImage(img) {
       if (size > 0) {
         const gridR = PADDING + r;
         const gridC = PADDING + c;
-        dots[gridR][gridC] = makeDot(size, currentColor);
+        if (inSafeZone(gridR, gridC)) dots[gridR][gridC] = makeDot(size, currentColor);
       }
     }
   }
