@@ -1239,6 +1239,13 @@
 
     <div class="export-section">
       <h3>SVG Output</h3>
+      <div class="setting-row" style="margin-bottom:10px">
+        <span class="setting-label">Include grid background</span>
+        <label class="toggle">
+          <input type="checkbox" id="exportGridToggle" onchange="updateExportGrid(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
       <div class="svg-output" id="svgOutput"></div>
       <button class="btn btn-secondary" style="width:100%;margin-bottom:6px" onclick="copySVG()">Copy SVG</button>
       <button class="btn btn-secondary" style="width:100%;margin-bottom:6px" onclick="downloadSVG()">Download SVG</button>
@@ -1260,6 +1267,7 @@ const SIZE_PRESETS = [24, 32, 48, 64, 96, 128, 200, 300];
 
 let GRID_COLOR = localStorage.getItem('gridColor') || '#262626';
 let GRID_OPACITY = parseFloat(localStorage.getItem('gridOpacity') ?? '1');
+let EXPORT_GRID = localStorage.getItem('exportGrid') === 'true';
 const GRID_COLOR_PRESETS = ['#262626', '#3a3a3a', '#4a4a4a', '#5a4530', '#304a45', '#30354a', '#4a3045'];
 
 const BRUSH_COUNT = 3;
@@ -1433,6 +1441,7 @@ renderTraceLevels();
 renderGridColorRow();
 document.getElementById('gridOpacity').value = Math.round(GRID_OPACITY * 100);
 document.getElementById('gridOpacityVal').textContent = Math.round(GRID_OPACITY * 100) + '%';
+document.getElementById('exportGridToggle').checked = EXPORT_GRID;
 initDots();
 initCanvas();
 resetHistory();
@@ -2193,10 +2202,24 @@ function updatePadding(v) {
 }
 
 // ─── SVG GENERATION ──────────────────────────────────────────────────────────
-function generateSVG(dotsData, gridSize, outputSize = OUTPUT_SIZE) {
+function generateSVG(dotsData, gridSize, outputSize = OUTPUT_SIZE, includeGrid = false) {
   const cellSize = outputSize / gridSize;
   let circles = '';
   let hasColor = false;
+
+  // Grid background (ghost dots) — drawn first so real dots layer on top
+  if (includeGrid) {
+    const ghostR = (cellSize / 2) * getBrushFractions()[1] * 0.5;
+    let ghosts = '';
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        const cx = (c + 0.5) * cellSize;
+        const cy = (r + 0.5) * cellSize;
+        ghosts += `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${ghostR.toFixed(2)}"/>`;
+      }
+    }
+    circles += `<g fill="${GRID_COLOR}" opacity="${GRID_OPACITY.toFixed(2)}">${ghosts}</g>`;
+  }
 
   for (let r = 0; r < gridSize; r++) {
     for (let c = 0; c < gridSize; c++) {
@@ -2219,13 +2242,19 @@ function generateSVG(dotsData, gridSize, outputSize = OUTPUT_SIZE) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${outputSize} ${outputSize}" fill="${rootFill}">${circles}</svg>`;
 }
 
+function updateExportGrid(checked) {
+  EXPORT_GRID = checked;
+  localStorage.setItem('exportGrid', checked);
+  updateSVGOutput();
+}
+
 function updateSVGOutput() {
-  const svg = generateSVG(dots, GRID);
+  const svg = generateSVG(dots, GRID, OUTPUT_SIZE, EXPORT_GRID);
   document.getElementById('svgOutput').textContent = svg;
 }
 
 function downloadSVG() {
-  const svg = generateSVG(dots, GRID);
+  const svg = generateSVG(dots, GRID, OUTPUT_SIZE, EXPORT_GRID);
   const name = (document.getElementById('iconName').value.trim() || 'icon') + '.svg';
   downloadFile(name, svg, 'image/svg+xml');
   const fb = document.getElementById('copyFeedback');
@@ -2254,7 +2283,7 @@ function svgToPngBlob(svgString, size) {
 
 async function downloadPNG() {
   // currentColor doesn't resolve inside <img>, so bake in white for mono dots
-  const svg = generateSVG(dots, GRID)
+  const svg = generateSVG(dots, GRID, OUTPUT_SIZE, EXPORT_GRID)
     .replace('fill="currentColor"', 'fill="#ffffff"')
     .replace('<svg ', `<svg width="${OUTPUT_SIZE}" height="${OUTPUT_SIZE}" `);
   const fb = document.getElementById('copyFeedback');
@@ -2276,7 +2305,7 @@ async function downloadPNG() {
 }
 
 function copySVG() {
-  const svg = generateSVG(dots, GRID);
+  const svg = generateSVG(dots, GRID, OUTPUT_SIZE, EXPORT_GRID);
   navigator.clipboard.writeText(svg).then(() => {
     const fb = document.getElementById('copyFeedback');
     fb.textContent = 'Copied to clipboard!';
@@ -2356,7 +2385,7 @@ function setLibraryView(view) {
 function downloadIconFile(idx, e) {
   e.stopPropagation();
   const icon = icons[idx];
-  const svg = generateSVG(icon.dots, icon.grid);
+  const svg = generateSVG(icon.dots, icon.grid, OUTPUT_SIZE, EXPORT_GRID);
   downloadFile(icon.name + '.svg', svg, 'image/svg+xml');
 }
 
@@ -2477,7 +2506,7 @@ function exportZip() {
 
   const files = icons.map(icon => ({
     name: icon.name + '.svg',
-    content: generateSVG(icon.dots, icon.grid)
+    content: generateSVG(icon.dots, icon.grid, OUTPUT_SIZE, EXPORT_GRID)
   }));
 
   const blob = buildZip(files);
@@ -2506,7 +2535,7 @@ function exportJson() {
       grid: icon.grid,
       width: OUTPUT_SIZE,
       height: OUTPUT_SIZE,
-      svg: generateSVG(icon.dots, icon.grid)
+      svg: generateSVG(icon.dots, icon.grid, OUTPUT_SIZE, EXPORT_GRID)
     }))
   };
 
